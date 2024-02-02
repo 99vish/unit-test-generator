@@ -9,6 +9,7 @@ public class UnitTestGeneratorApplication {
 
 	public static void main(String[] args) {
 
+		
 		SpringApplication.run(UnitTestGeneratorApplication.class, args);
 
 	}
