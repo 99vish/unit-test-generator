@@ -18,10 +18,10 @@ public class PathGeneratorUtil {
         return path.getRoot().resolve(path.subpath(0,mainIndex+1)).resolveSibling("test").resolve(path.subpath(mainIndex+1,blumeGlobalIndex+1)).resolve(className);
     }
 
-    public static Path getPathForJsonRequestGeneration(Path path,String className){
+    public static Path getPathForJsonRequestGeneration(Path path,String className,String methodName){
 
         int mainIndex = getKeyWordIndex("main",path);
-        return path.getRoot().resolve(path.subpath(0,mainIndex+1)).resolveSibling("test").resolve("resources").resolve(className).resolve("Request.json");
+        return path.getRoot().resolve(path.subpath(0,mainIndex+1)).resolveSibling("test").resolve("resources").resolve(className).resolve(className+"_"+methodName+"_Request.json");
     }
 
     private static int getKeyWordIndex(String word,Path path){

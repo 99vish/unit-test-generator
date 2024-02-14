@@ -13,9 +13,7 @@ public class Argument {
 
     private String dataType;
 
-    private boolean requestBody;
-
-    private String entityType;
+    private String annotationType;
 
     private String pathToJsonFile;
 

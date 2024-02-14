@@ -21,8 +21,8 @@ public class InputTestCases {
     @NotEmpty(message = "Method Name cannot be Empty")
     private String methodName;
 
-    @ExcelCellName(value = "Expected Output")
+    @ExcelCellName(value = "Request Properties")
     @NotEmpty(message = "Output cannot be Empty")
-    private String expectedOutput;
+    private String requestProperties;
 
 }

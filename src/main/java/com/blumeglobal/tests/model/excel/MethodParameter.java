@@ -22,7 +22,5 @@ public class MethodParameter {
     @ExcelCellName("Parameter Value")
     private String parameterValue;
 
-    @ExcelCellName("Data Type")
-    private String dataType;
 
 }

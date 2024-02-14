@@ -12,19 +12,16 @@ import java.util.*;
 
 public class Cache {
 
-    private static  Map<String, ClassOrInterfaceDeclaration> classOrInterfaceDeclarationMap = new HashMap<>();
+    private final static  Map<String, ClassOrInterfaceDeclaration> classOrInterfaceDeclarationMap = new HashMap<>();
 
-    private static  Map<ClassOrInterfaceDeclaration,Path> classOrInterfaceDeclarationToPathMap = new HashMap<>();
+    private final static  Map<ClassOrInterfaceDeclaration,Path> classOrInterfaceDeclarationToPathMap = new HashMap<>();
 
-    public void cacheClassOrInterfaceDeclarations(String moduleRootPath) {
 
-        //List<ClassOrInterfaceDeclaration> classOrInterfaceDeclarations = JavaParserUtil.getClassOrInterfaceDeclarations(moduleRootPath);
+    private final static Map<ClassOrInterfaceDeclaration,ClassOrInterfaceDeclaration> classOrInterfaceDeclarationToEntityMap = new HashMap<>();
+
+    public static void cacheClassOrInterfaceDeclarations(String moduleRootPath) {
+
         List<ClassOrInterfaceDeclaration> classOrInterfaceDeclarations = JavaParserUtil.getClassOrInterfaceDeclarations(moduleRootPath,classOrInterfaceDeclarationToPathMap,classOrInterfaceDeclarationMap);
-//        for (ClassOrInterfaceDeclaration classOrInterfaceDeclaration : classOrInterfaceDeclarations) {
-//            classOrInterfaceDeclarationMap.put(classOrInterfaceDeclaration.getNameAsString(), classOrInterfaceDeclaration);
-//        }
-
-
     }
 
     public static ClassOrInterfaceDeclaration getClassOrInterfaceDeclarationByClassName(String className) {
@@ -70,6 +67,10 @@ public class Cache {
             }
         }
         return imports;
+    }
+
+    public static void mapClassOrInterfaceDeclarationToEntity (){
+
     }
 
 }

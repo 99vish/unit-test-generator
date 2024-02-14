@@ -4,7 +4,7 @@ import com.blumeglobal.tests.builder.ClassDeclarationBuilderImpl;
 import com.blumeglobal.tests.builder.MethodDeclarationBuilderImpl;
 import com.blumeglobal.tests.builder.interfaces.ClassDeclarationBuilder;
 import com.blumeglobal.tests.builder.interfaces.MethodDeclarationBuilder;
-import com.blumeglobal.tests.cache.Cache;
+import com.blumeglobal.tests.cache.InputTestCasesCache;
 import com.blumeglobal.tests.controller.PathController;
 import com.blumeglobal.tests.model.excel.InputTestCases;
 import com.blumeglobal.tests.model.excel.MethodParameter;
@@ -27,34 +27,30 @@ import java.util.Map;
 
 public class TestGenerator {
 
+
     public static void generateTests(){
 
-
-        Path projectPath = PathController.getProjectPath();
-        Path excelPath = PathController.getExcelPath();
-
-        Cache cache=new Cache();
-        cache.cacheClassOrInterfaceDeclarations(projectPath.toString());
-
+        //Path excelPath = PathController.getExcelPath();
+        Path excelPath = PathController.getCompletedExcelPath();
         Workbook workbook = null;
 
-
         try {
-            workbook = new XSSFWorkbook(Files.newInputStream(PathController.getExcelPath()));
-
-        } catch (IOException e) {
+            workbook = new XSSFWorkbook(Files.newInputStream(excelPath));
+        } catch (
+        IOException e) {
             throw new RuntimeException(e);
         }
 
 
-        List<InputTestCases> inputTestCasesList= FileReaderUtil.readExcelFile(excelPath.toString(), workbook.getSheet("TestCases"),InputTestCases.class);
+        //List<InputTestCases> inputTestCasesList= FileReaderUtil.readExcelFile(excelPath.toString(), workbook.getSheet("TestCases"),InputTestCases.class);
+        List<InputTestCases> inputTestCasesList = InputTestCasesCache.getInputTestCasesList();
         List<MethodParameter> methodParametersList=FileReaderUtil.readExcelFile(excelPath.toString(), workbook.getSheet("MethodParams"),MethodParameter.class);
 
         MethodDeclarationBuilder methodDeclarationBuilder=new MethodDeclarationBuilderImpl(methodParametersList);
         ClassDeclarationBuilder classDeclarationBuilder=new ClassDeclarationBuilderImpl(methodDeclarationBuilder, getInputTestCasesMap(inputTestCasesList));
         List<TestClassDeclaration> classDeclarations = classDeclarationBuilder.buildClassDeclarations();
 
-        for(TestClassDeclaration classDeclaration:classDeclarations){
+            for(TestClassDeclaration classDeclaration:classDeclarations){
 
             String className = classDeclaration.getClassName();
             Map<String,Object> DataModel = new HashMap<>();
@@ -70,7 +66,7 @@ public class TestGenerator {
             processDataWithTemplate(DataModel, "src\\main\\resources\\templates\\ControllerTemplate.ftl", PathGeneratorUtil.getTestFolderPath(classDeclaration.getClassPath(),className));
 
         }
-        System.out.println("Test cases have been generated");
+            System.out.println("Test cases have been generated");
     }
     private static Map<String, List<InputTestCases>> getInputTestCasesMap(List<InputTestCases>inputTestCasesList){
         Map<String, List<InputTestCases>> inputTestCasesMap=new HashMap<>();
