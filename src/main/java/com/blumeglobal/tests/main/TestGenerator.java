@@ -20,6 +20,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -28,9 +29,8 @@ import java.util.Map;
 public class TestGenerator {
 
 
-    public static void generateTests(){
+    public static void generateTests(String className){
 
-        //Path excelPath = PathController.getExcelPath();
         Path excelPath = PathController.getCompletedExcelPath();
         Workbook workbook = null;
 
@@ -42,47 +42,31 @@ public class TestGenerator {
         }
 
 
-        //List<InputTestCases> inputTestCasesList= FileReaderUtil.readExcelFile(excelPath.toString(), workbook.getSheet("TestCases"),InputTestCases.class);
+
         List<InputTestCases> inputTestCasesList = InputTestCasesCache.getInputTestCasesList();
         List<MethodParameter> methodParametersList=FileReaderUtil.readExcelFile(excelPath.toString(), workbook.getSheet("MethodParams"),MethodParameter.class);
 
         MethodDeclarationBuilder methodDeclarationBuilder=new MethodDeclarationBuilderImpl(methodParametersList);
-        ClassDeclarationBuilder classDeclarationBuilder=new ClassDeclarationBuilderImpl(methodDeclarationBuilder, getInputTestCasesMap(inputTestCasesList));
-        List<TestClassDeclaration> classDeclarations = classDeclarationBuilder.buildClassDeclarations();
+        ClassDeclarationBuilder classDeclarationBuilder=new ClassDeclarationBuilderImpl(methodDeclarationBuilder, InputTestCasesCache.getInputTestCasesByClassName(className),className);
+        TestClassDeclaration classDeclaration = classDeclarationBuilder.buildClassDeclarations();
 
-            for(TestClassDeclaration classDeclaration:classDeclarations){
 
-            String className = classDeclaration.getClassName();
-            Map<String,Object> DataModel = new HashMap<>();
-            DataModel.put("packageName",classDeclaration.getPackageName());
-            DataModel.put("importsList",classDeclaration.getImports());
-            DataModel.put("className",className);
-            DataModel.put("classInstance",Character.toLowerCase(className.charAt(0)) + className.substring(1));
-            DataModel.put("methodsList",classDeclaration.getMethodDeclarations());
+        Map<String,Object> DataModel = new HashMap<>();
+        DataModel.put("packageName",classDeclaration.getPackageName());
+        DataModel.put("importsList",classDeclaration.getImports());
+        DataModel.put("className",className);
+        DataModel.put("classInstance",Character.toLowerCase(className.charAt(0)) + className.substring(1));
+        DataModel.put("methodsList",classDeclaration.getMethodDeclarations());
 
-            processDataWithTemplate(null,"src\\main\\resources\\templates\\AbstractIntegrationTestTemplate.ftl", PathGeneratorUtil.getPathForUtilCLassGeneration(classDeclaration.getClassPath(),"AbstractIntegrationTest.java"));
-            processDataWithTemplate(null,"src\\main\\resources\\templates\\JsonFileReaderUtil.ftl",PathGeneratorUtil.getPathForUtilCLassGeneration(classDeclaration.getClassPath(),"JsonFileReaderUtil.java"));
+        processDataWithTemplate(null,"src\\main\\resources\\templates\\AbstractIntegrationTestTemplate.ftl", PathGeneratorUtil.getPathForUtilCLassGeneration(classDeclaration.getClassPath(),"AbstractIntegrationTest.java"));
+        processDataWithTemplate(null,"src\\main\\resources\\templates\\JsonFileReaderUtil.ftl",PathGeneratorUtil.getPathForUtilCLassGeneration(classDeclaration.getClassPath(),"JsonFileReaderUtil.java"));
 
-            processDataWithTemplate(DataModel, "src\\main\\resources\\templates\\ControllerTemplate.ftl", PathGeneratorUtil.getTestFolderPath(classDeclaration.getClassPath(),className));
+        processDataWithTemplate(DataModel, "src\\main\\resources\\templates\\ControllerTemplate.ftl", PathGeneratorUtil.getTestFolderPath(classDeclaration.getClassPath(),className));
 
-        }
-            System.out.println("Test cases have been generated");
-    }
-    private static Map<String, List<InputTestCases>> getInputTestCasesMap(List<InputTestCases>inputTestCasesList){
-        Map<String, List<InputTestCases>> inputTestCasesMap=new HashMap<>();
+        System.out.println("Test cases have been generated for "+className);
 
-        for(InputTestCases inputTestCase:inputTestCasesList){
-            String className=inputTestCase.getClassName();
-            if (inputTestCasesMap.containsKey(className)) {
-                List<InputTestCases> existingList = inputTestCasesMap.get(className);
-                existingList.add(inputTestCase);
-            } else {
-                List<InputTestCases> newList = new ArrayList<>();
-                newList.add(inputTestCase);
-                inputTestCasesMap.put(className, newList);
-            }
-        }
-        return inputTestCasesMap;
+
+
     }
     private static void processDataWithTemplate(Map<String,Object>DataModel, String pathToTemplate, Path path){
 

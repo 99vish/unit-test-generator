@@ -60,12 +60,12 @@ public class ${className}Test extends AbstractIntegrationTest {
       </#if>
       </#if>
 
-        List<${method.entityType}> actualList = body.getResults();
+        List<${method.returnEntityType}> actualList = body.getResults();
         assertNotNull(actualList);
 
       <#if method.hasPathVariable??>
        <#if method.hasPathVariable>
-        for (${method.entityType} dto : actualList) {
+        for (${method.returnEntityType} dto : actualList) {
         <#list method.arguments as argument>
          <#if argument.annotationType == "PathVariable">
            assertEquals(${argument.name}, dto.get${argument.name?cap_first}());

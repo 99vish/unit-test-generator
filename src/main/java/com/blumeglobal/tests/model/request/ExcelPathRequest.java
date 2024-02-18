@@ -10,4 +10,5 @@ import java.nio.file.Path;
 public class ExcelPathRequest {
 
     private Path completedExcelPath;
+    private String classname;
 }

@@ -14,32 +14,32 @@ public class ClassDeclarationBuilderImpl implements ClassDeclarationBuilder {
 
     private final MethodDeclarationBuilder methodDeclarationBuilder;
 
-    private Map<String, List<InputTestCases>> inputTestCasesMap;
+    private List<InputTestCases> inputTestCases;
+
+    private final String className;
 
 
-    public ClassDeclarationBuilderImpl(MethodDeclarationBuilder methodDeclarationBuilder, Map<String, List<InputTestCases>> inputTestCasesMap){
+
+    public ClassDeclarationBuilderImpl(MethodDeclarationBuilder methodDeclarationBuilder, List<InputTestCases> inputTestCases,String className){
         this.methodDeclarationBuilder=methodDeclarationBuilder;
-        this.inputTestCasesMap=inputTestCasesMap;
+        this.inputTestCases=inputTestCases;
+        this.className=className;
     }
 
     @Override
-    public List<TestClassDeclaration> buildClassDeclarations() {
-        Set<String> classNames = inputTestCasesMap.keySet();
-        List<TestClassDeclaration> classDeclarations = new ArrayList<>();
+    public TestClassDeclaration buildClassDeclarations() {
 
-        for (String className : classNames) {
-            TestClassDeclaration classDeclaration = new TestClassDeclaration();
-            ClassOrInterfaceDeclaration classOrInterfaceDeclarationByClassName = Cache.getClassOrInterfaceDeclarationByClassName(className);
-            classDeclaration.setClassPath(Cache.getPathFromClassDeclaration(classOrInterfaceDeclarationByClassName));
-            classDeclaration.setPackageName(Cache.getPackageFromClassDeclarationNode(classOrInterfaceDeclarationByClassName.getParentNodeForChildren()));
-            classDeclaration.setImports(Cache.getImportsFromClassDeclarationNode(classOrInterfaceDeclarationByClassName.getParentNodeForChildren()));
-            classDeclaration.setClassName(className);
-            List<MethodDeclaration> methodDeclarations = methodDeclarationBuilder.buildMethodDeclarations(className);
-            classDeclaration.getMethodDeclarations().addAll(methodDeclarations);
-            classDeclarations.add(classDeclaration);
-        }
 
-        return classDeclarations;
+        TestClassDeclaration classDeclaration = new TestClassDeclaration();
+        ClassOrInterfaceDeclaration classOrInterfaceDeclarationByClassName = Cache.getClassOrInterfaceDeclarationByClassName(className);
+        classDeclaration.setClassPath(Cache.getPathFromClassDeclaration(classOrInterfaceDeclarationByClassName));
+        classDeclaration.setPackageName(Cache.getPackageFromClassDeclarationNode(classOrInterfaceDeclarationByClassName.getParentNodeForChildren()));
+        classDeclaration.setImports(Cache.getImportsFromClassDeclarationNode(classOrInterfaceDeclarationByClassName.getParentNodeForChildren()));
+        classDeclaration.setClassName(className);
+        List<MethodDeclaration> methodDeclarations = methodDeclarationBuilder.buildMethodDeclarations(className);
+        classDeclaration.getMethodDeclarations().addAll(methodDeclarations);
+
+        return classDeclaration;
     }
 
 }

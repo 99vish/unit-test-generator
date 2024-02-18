@@ -27,7 +27,9 @@ public class MethodDeclaration {
 
     private Boolean hasRequestParam;
 
-    private String entityType;
+    private String entityType = null;
+
+    private String returnEntityType;
 
     private List<String> requestProperties ;
 

@@ -10,7 +10,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class InputTestCasesCache {
 
@@ -19,6 +21,12 @@ public class InputTestCasesCache {
 
     @Getter
     public static List<String> inputMethodNamesByClassName = new ArrayList<>();
+
+    @Getter
+    public static Map<String,List<InputTestCases>> inputTestCasesByClassNameMap = new HashMap<>();
+
+    @Getter
+    public static List<String> inputClassNames = new ArrayList<>();
 
 
     public static void cacheInputTestCases (Path excelPath){
@@ -31,6 +39,19 @@ public class InputTestCasesCache {
             throw new RuntimeException(e);
         }
         inputTestCasesList= FileReaderUtil.readExcelFile(excelPath.toString(), workbook.getSheet("TestCases"),InputTestCases.class);
+
+        for(InputTestCases inputTestCase:inputTestCasesList){
+            String className = inputTestCase.getClassName();
+            if(inputTestCasesByClassNameMap.containsKey(className)){
+                inputTestCasesByClassNameMap.get(className).add(inputTestCase);
+            }
+            else {
+                inputTestCasesByClassNameMap.put(className,new ArrayList<>());
+                inputTestCasesByClassNameMap.get(className).add(inputTestCase);
+                inputClassNames.add(className);
+            }
+        }
+
     }
 
     public static String getRequestPropertyStringByClassNameAndMethodName (String className,String methodName) {
@@ -40,6 +61,10 @@ public class InputTestCasesCache {
             }
         }
         return null;
+    }
+
+    public static List<InputTestCases> getInputTestCasesByClassName (String className) {
+        return inputTestCasesByClassNameMap.get(className);
     }
 
 

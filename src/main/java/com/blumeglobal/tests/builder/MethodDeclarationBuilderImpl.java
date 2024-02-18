@@ -46,27 +46,34 @@ public class MethodDeclarationBuilderImpl implements MethodDeclarationBuilder {
         Path classPath = Cache.getPathFromClassDeclaration(Cache.getClassOrInterfaceDeclarationByClassName(className));
 
         List<MethodDeclaration> methodDeclarations=new ArrayList<>();
-        List<String> methodNamesByClassNameFromExcel = getMethodNamesByClassName(className);
+
+        List<String> methodNamesByClassNameFromExcel = getGivenMethodNamesByClassName(className);
+
         for (String methodName : methodNamesByClassNameFromExcel) {
+
             com.github.javaparser.ast.body.MethodDeclaration javaParserMethodDeclaration = Cache.getMethodDeclaration(className, methodName);
-            String entity = javaParserMethodDeclaration.getType().asClassOrInterfaceType().getChildNodes().get(1).getChildNodes().get(1).toString();
-            ClassOrInterfaceDeclaration entityClassDeclaration = Cache.getClassOrInterfaceDeclarationByClassName(entity);
+
+            //String entity = javaParserMethodDeclaration.getType().asClassOrInterfaceType().getChildNodes().get(1).getChildNodes().get(1).toString();
+
             Path excelForJsonPath = getRequestSheetPath(PathController.getCompletedExcelPath().toString(),className,methodName);
+
             MethodDeclaration methodDeclaration=new MethodDeclaration();
-            methodDeclaration.setEntityType(entity);
+            //methodDeclaration.setEntityType(entity);
             methodDeclaration.setMethodName(methodName);
 
             String requestProperties = InputTestCasesCache.getRequestPropertyStringByClassNameAndMethodName(className,methodName);
             List<String> requestPropertiesList = getRequestPropertiesAsList(requestProperties);
-            System.out.println(requestProperties);
-            System.out.println(requestPropertiesList);
+
             methodDeclaration.setRequestProperties(requestPropertiesList);
-            System.out.println(methodDeclaration.getRequestProperties());
+
             methodDeclaration.setReturnValue(javaParserMethodDeclaration.getType().asClassOrInterfaceType().getTypeArguments().get().get(0).asString());
+
             NodeList<Parameter> parameterNodeList = javaParserMethodDeclaration.getParameters();
             List<Parameter> parameterList = new ArrayList<>(parameterNodeList);
+
             if(!parameterList.isEmpty()) {
                 for (Parameter parameter : parameterList) {
+
                     Argument argument = new Argument();
                     String parameterName = parameter.getName().getIdentifier();
                     argument.setName(parameterName);
@@ -77,6 +84,9 @@ public class MethodDeclarationBuilderImpl implements MethodDeclarationBuilder {
 
                         argument.setAnnotationType("RequestBody");
                         methodDeclaration.setHasRequestBody(true);
+                        //if there is a request body present then the entity inside the requestbody should be used to take the entity type
+                        methodDeclaration.setEntityType(parameter.getType().asClassOrInterfaceType().getChildNodes().get(1).toString());
+
                     }
 
                     if(parameter.getAnnotations().get(0).getNameAsString().equals("RequestParam"))
@@ -91,21 +101,28 @@ public class MethodDeclarationBuilderImpl implements MethodDeclarationBuilder {
                         argument.setAnnotationType("PathVariable");
                     }
 
-                    MethodParameter methodParameter = getMethodParameter(className, javaParserMethodDeclaration.getNameAsString(), parameter.getNameAsString());
+                    String parameterValue = getMethodParameter(className, javaParserMethodDeclaration.getNameAsString(), parameter.getNameAsString());
 
-                   // Map<String,String>AssertionValues = getKeyValuePairs(assertionString);
-                    //methodDeclaration.setAssertionValues(AssertionValues);
+                    //if apirequest is not present then,the entity type will be set by responsetype
+                    if(methodDeclaration.getEntityType() == null){
+                        methodDeclaration.setEntityType(javaParserMethodDeclaration.getType().asClassOrInterfaceType().getChildNodes().get(1).getChildNodes().get(1).toString());
+                    }
+
+                    methodDeclaration.setReturnEntityType(javaParserMethodDeclaration.getType().asClassOrInterfaceType().getChildNodes().get(1).getChildNodes().get(1).toString());
+
+
                     if (argument.getName().equals("apiRequest")) {
 
                         argument.setValue("apijson");
+
                         Path pathToJsonFile = PathGeneratorUtil.getPathForJsonRequestGeneration(classPath,className,methodName);
                         argument.setPathToJsonFile(pathToJsonFile.toString().replace("\\","\\\\"));
                         String value= ExcelToJsonDataGeneratorUtil.generateJsonString(excelForJsonPath,className,methodName);
-                        System.out.println(value);
+
                         generateAndWriteJson(pathToJsonFile.toString(),value);
                     }
                     else {
-                        argument.setValue(methodParameter.getParameterValue());
+                        argument.setValue(parameterValue);
                     }
                     methodDeclaration.getArguments().add(argument);
                 }
@@ -115,15 +132,13 @@ public class MethodDeclarationBuilderImpl implements MethodDeclarationBuilder {
         return methodDeclarations;
     }
 
-    private MethodParameter getMethodParameter(String className, String methodName, String parameterName) {
-        MethodParameter methodParameter = null;
+    private String getMethodParameter(String className, String methodName, String parameterName) {
         for (MethodParameter parameter : inputMethodParams) {
             if (parameter.getClassName().equalsIgnoreCase(className) && parameter.getMethodName().equalsIgnoreCase(methodName) && parameter.getParameterName().equalsIgnoreCase(parameterName)) {
-                methodParameter = parameter;
-                break;
+                return parameter.getParameterValue();
             }
         }
-        return methodParameter;
+        return null;
     }
 
     private List<String> getRequestPropertiesAsList(String inputString){
@@ -185,12 +200,15 @@ public class MethodDeclarationBuilderImpl implements MethodDeclarationBuilder {
 
         // Iterate over all the sheets in the workbook
         for (Sheet sheet : workbook) {
+
+
             // Check if the current sheet matches the desired sheet name
             if (sheet.getSheetName().equalsIgnoreCase(methodName+"_Request")) {
                 // If found, return the path of the Excel file
                 return Paths.get(workbookPath);
             }
         }
+
 
         // If the sheet is not found, return null
         return null;

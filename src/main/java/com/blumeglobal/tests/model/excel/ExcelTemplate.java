@@ -13,4 +13,5 @@ public class ExcelTemplate {
     //private List<Map<String, List<String>>> requests;
     private List<String> requests;
     private List<List<String>> methodParams;
+    private String className;
 }

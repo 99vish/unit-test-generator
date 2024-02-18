@@ -6,6 +6,6 @@ import java.util.List;
 
 public interface ClassDeclarationBuilder {
 
-    List<TestClassDeclaration> buildClassDeclarations();
+    TestClassDeclaration buildClassDeclarations();
 
 }

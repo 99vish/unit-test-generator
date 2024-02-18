@@ -17,25 +17,27 @@ public class ExcelTemplateGenerator {
 
 
 
-    @Getter
-    public static List<String> Headers =new ArrayList<>();
-    @Getter
-    public static List<String> Requests = new ArrayList<>();
+//    @Getter
+//    public static List<String> Headers =new ArrayList<>();
+//    @Getter
+//    public static List<String> Requests = new ArrayList<>();
 
     @Getter
     public static List<List<String>> methodParams = new ArrayList<>();
 
-    public static void generateExcelTemplate(){
+    public static ExcelTemplate generateExcelTemplate( String ClassName){
 
-        Headers=Arrays.asList("Class Name","Method Name","Parameter Name","Parameter Value");
+        List<String>Headers=Arrays.asList("Class Name","Method Name","Parameter Name","Parameter Value");
+        List<String>Requests=new ArrayList<>();
+        List<List<String>>methodParams = new ArrayList<>();
 
 
-        List<InputTestCases>InputTestCasesList = InputTestCasesCache.getInputTestCasesList();
+        List<InputTestCases>InputTestCasesList = InputTestCasesCache.getInputTestCasesByClassName(ClassName);
 
         for(InputTestCases inputTestCase:InputTestCasesList){
 
-            String className = inputTestCase.getClassName();
-            MethodDeclaration methodDeclaration = Cache.getMethodDeclaration(inputTestCase.getClassName(),inputTestCase.getMethodName());
+
+            MethodDeclaration methodDeclaration = Cache.getMethodDeclaration(ClassName,inputTestCase.getMethodName());
             NodeList<Parameter> parameterNodeList = null;
             try {
                 parameterNodeList = methodDeclaration.getParameters();
@@ -75,6 +77,14 @@ public class ExcelTemplateGenerator {
                 }
             }
         }
+
+        ExcelTemplate excelTemplate = new ExcelTemplate();
+        excelTemplate.setClassName(ClassName);
+        excelTemplate.setHeaders(Headers);
+        excelTemplate.setMethodParams(methodParams);
+        excelTemplate.setRequests(Requests);
+
+        return excelTemplate;
 
 
     }
