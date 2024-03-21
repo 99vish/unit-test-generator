@@ -29,8 +29,10 @@ public class MethodDeclaration {
 
     private String entityType = null;
 
-    private String returnEntityType;
+    private String returnEntityType = null;
 
-    private List<String> requestProperties ;
+    private List<String> assertionParameters ;
+
+    private List<Map<String,String>> pathToJsonFiles;
 
 }

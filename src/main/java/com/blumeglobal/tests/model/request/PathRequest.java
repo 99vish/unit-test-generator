@@ -13,5 +13,5 @@ public class PathRequest {
 
     private Path excelPath;
     private Path projectPath;
-    private Path interfacesPath;
+
 }

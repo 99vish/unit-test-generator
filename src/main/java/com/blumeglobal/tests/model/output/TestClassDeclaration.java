@@ -21,4 +21,8 @@ public class TestClassDeclaration {
 
     private Path classPath;
 
+    private Boolean isConstructorPresent;
+
+    private List<String> dependentFieldClasses = new ArrayList<>();
+
 }

@@ -7,6 +7,7 @@ import com.blumeglobal.tests.model.output.MethodDeclaration;
 import com.blumeglobal.tests.builder.interfaces.ClassDeclarationBuilder;
 import com.blumeglobal.tests.builder.interfaces.MethodDeclarationBuilder;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.FieldDeclaration;
 
 import java.util.*;
 
@@ -36,8 +37,17 @@ public class ClassDeclarationBuilderImpl implements ClassDeclarationBuilder {
         classDeclaration.setPackageName(Cache.getPackageFromClassDeclarationNode(classOrInterfaceDeclarationByClassName.getParentNodeForChildren()));
         classDeclaration.setImports(Cache.getImportsFromClassDeclarationNode(classOrInterfaceDeclarationByClassName.getParentNodeForChildren()));
         classDeclaration.setClassName(className);
-        List<MethodDeclaration> methodDeclarations = methodDeclarationBuilder.buildMethodDeclarations(className);
+        List<MethodDeclaration> methodDeclarations = methodDeclarationBuilder.buildMethodDeclarations(className,inputTestCases);
         classDeclaration.getMethodDeclarations().addAll(methodDeclarations);
+        classDeclaration.setIsConstructorPresent(!classOrInterfaceDeclarationByClassName.getConstructors().isEmpty());
+        if(!classDeclaration.getIsConstructorPresent()){
+            for(FieldDeclaration fieldDeclaration: classOrInterfaceDeclarationByClassName.getFields()){
+                if(fieldDeclaration.isAnnotationPresent("Autowired")){
+                    //the classNames are added in this array
+                    classDeclaration.getDependentFieldClasses().add(fieldDeclaration.getVariable(0).getType().asClassOrInterfaceType().getNameAsString());
+                }
+            }
+        }
 
         return classDeclaration;
     }

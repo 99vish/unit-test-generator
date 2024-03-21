@@ -21,15 +21,12 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class TestGenerator {
 
 
-    public static void generateTests(String className){
+    public static void generateTests(String className, List<InputTestCases> inputTestCasesList){
 
         Path excelPath = PathController.getCompletedExcelPath();
         Workbook workbook = null;
@@ -41,13 +38,11 @@ public class TestGenerator {
             throw new RuntimeException(e);
         }
 
-
-
-        List<InputTestCases> inputTestCasesList = InputTestCasesCache.getInputTestCasesList();
+        //List<InputTestCases> inputTestCasesList = InputTestCasesCache.getInputTestCasesList();
         List<MethodParameter> methodParametersList=FileReaderUtil.readExcelFile(excelPath.toString(), workbook.getSheet("MethodParams"),MethodParameter.class);
 
         MethodDeclarationBuilder methodDeclarationBuilder=new MethodDeclarationBuilderImpl(methodParametersList);
-        ClassDeclarationBuilder classDeclarationBuilder=new ClassDeclarationBuilderImpl(methodDeclarationBuilder, InputTestCasesCache.getInputTestCasesByClassName(className),className);
+        ClassDeclarationBuilder classDeclarationBuilder=new ClassDeclarationBuilderImpl(methodDeclarationBuilder,inputTestCasesList,className);
         TestClassDeclaration classDeclaration = classDeclarationBuilder.buildClassDeclarations();
 
 
@@ -57,6 +52,9 @@ public class TestGenerator {
         DataModel.put("className",className);
         DataModel.put("classInstance",Character.toLowerCase(className.charAt(0)) + className.substring(1));
         DataModel.put("methodsList",classDeclaration.getMethodDeclarations());
+        DataModel.put("fields",classDeclaration.getDependentFieldClasses());
+        DataModel.put("isConstructorPresent",classDeclaration.getIsConstructorPresent());
+
 
         processDataWithTemplate(null,"src\\main\\resources\\templates\\AbstractIntegrationTestTemplate.ftl", PathGeneratorUtil.getPathForUtilCLassGeneration(classDeclaration.getClassPath(),"AbstractIntegrationTest.java"));
         processDataWithTemplate(null,"src\\main\\resources\\templates\\JsonFileReaderUtil.ftl",PathGeneratorUtil.getPathForUtilCLassGeneration(classDeclaration.getClassPath(),"JsonFileReaderUtil.java"));

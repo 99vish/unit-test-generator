@@ -17,22 +17,14 @@ public class ExcelTemplateGenerator {
 
 
 
-//    @Getter
-//    public static List<String> Headers =new ArrayList<>();
-//    @Getter
-//    public static List<String> Requests = new ArrayList<>();
-
     @Getter
     public static List<List<String>> methodParams = new ArrayList<>();
 
-    public static ExcelTemplate generateExcelTemplate( String ClassName){
+    public static ExcelTemplate generateExcelTemplate( String ClassName ,List<InputTestCases> InputTestCasesList){
 
         List<String>Headers=Arrays.asList("Class Name","Method Name","Parameter Name","Parameter Value");
         List<String>Requests=new ArrayList<>();
         List<List<String>>methodParams = new ArrayList<>();
-
-
-        List<InputTestCases>InputTestCasesList = InputTestCasesCache.getInputTestCasesByClassName(ClassName);
 
         for(InputTestCases inputTestCase:InputTestCasesList){
 
@@ -62,14 +54,13 @@ public class ExcelTemplateGenerator {
 //                        Requests.add(request);
 //                    }
 //                    else{
-                    if(parameter.getAnnotations().get(0).getNameAsString().equals("RequestBody")) {
+                    if(parameter.getAnnotations().isNonEmpty() && parameter.getAnnotations().get(0).getNameAsString().equals("RequestBody")) {
                         Requests.add(methodDeclaration.getNameAsString());
                     }
                     else {
                         row.add(inputTestCase.getClassName());
                         row.add(inputTestCase.getMethodName());
                         row.add(parameter.getNameAsString());
-                        //row.add("");
                         methodParams.add(row);
                     }
 

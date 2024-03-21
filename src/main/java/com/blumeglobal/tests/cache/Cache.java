@@ -5,6 +5,8 @@ import com.github.javaparser.ast.ImportDeclaration;
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.collections4.CollectionUtils;
 
 import java.nio.file.Path;
@@ -12,29 +14,39 @@ import java.util.*;
 
 public class Cache {
 
-    private final static  Map<String, ClassOrInterfaceDeclaration> classOrInterfaceDeclarationMap = new HashMap<>();
+    public static final  Map<String, ClassOrInterfaceDeclaration> classOrInterfaceDeclarationMap = new HashMap<>();
+    public static final  Map<ClassOrInterfaceDeclaration,Path> classOrInterfaceDeclarationToPathMap = new HashMap<>();
 
-    private final static  Map<ClassOrInterfaceDeclaration,Path> classOrInterfaceDeclarationToPathMap = new HashMap<>();
+    @Getter
+    public static final List<Map<String,List<String>>> classOrInterfaceToMethodsMapList = new ArrayList<>();
 
-
+    @Getter
+    public static  List<ClassOrInterfaceDeclaration> classOrInterfaceDeclarations = new ArrayList<>();
     private final static Map<ClassOrInterfaceDeclaration,ClassOrInterfaceDeclaration> classOrInterfaceDeclarationToEntityMap = new HashMap<>();
 
     public static void cacheClassOrInterfaceDeclarations(String moduleRootPath) {
 
-        List<ClassOrInterfaceDeclaration> classOrInterfaceDeclarations = JavaParserUtil.getClassOrInterfaceDeclarations(moduleRootPath,classOrInterfaceDeclarationToPathMap,classOrInterfaceDeclarationMap);
+        classOrInterfaceDeclarations = JavaParserUtil.getClassOrInterfaceDeclarations(moduleRootPath,classOrInterfaceDeclarationToPathMap,classOrInterfaceDeclarationMap);
+        for(ClassOrInterfaceDeclaration classOrInterfaceDeclaration: classOrInterfaceDeclarations) {
+            Map<String,List<String>> map = new HashMap<>();
+            map.put(classOrInterfaceDeclaration.getNameAsString(),getMethodDeclarationsByClassName(classOrInterfaceDeclaration.getNameAsString()));
+            classOrInterfaceToMethodsMapList.add(map);
+        }
     }
 
     public static ClassOrInterfaceDeclaration getClassOrInterfaceDeclarationByClassName(String className) {
+
         return classOrInterfaceDeclarationMap.get(className);
     }
 
-    public static Collection<ClassOrInterfaceDeclaration> getClassOrInterfaceDeclarations() {
-        return classOrInterfaceDeclarationMap.values();
-    }
 
-    public static List<MethodDeclaration> getMethodDeclarationsByClassName(String className){
+    public static List<String> getMethodDeclarationsByClassName(String className){
         ClassOrInterfaceDeclaration classOrInterfaceDeclaration = classOrInterfaceDeclarationMap.get(className);
-        return classOrInterfaceDeclaration.getMethods();
+        List<String> methods = new ArrayList<>();
+        for(MethodDeclaration methodDeclaration: classOrInterfaceDeclaration.getMethods()) {
+            methods.add(methodDeclaration.getNameAsString());
+        }
+        return methods;
     }
 
     public static MethodDeclaration getMethodDeclaration(String className, String methodName){
@@ -69,9 +81,6 @@ public class Cache {
         return imports;
     }
 
-    public static void mapClassOrInterfaceDeclarationToEntity (){
-
-    }
 
 }
 

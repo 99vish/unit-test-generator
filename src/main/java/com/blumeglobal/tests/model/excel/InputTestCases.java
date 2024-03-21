@@ -21,8 +21,8 @@ public class InputTestCases {
     @NotEmpty(message = "Method Name cannot be Empty")
     private String methodName;
 
-    @ExcelCellName(value = "Request Properties")
+    @ExcelCellName(value = "Assertion Parameters")
     @NotEmpty(message = "Output cannot be Empty")
-    private String requestProperties;
+    private String assertionParametersString;
 
 }

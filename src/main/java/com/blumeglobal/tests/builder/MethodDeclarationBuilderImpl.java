@@ -4,6 +4,7 @@ import com.blumeglobal.tests.cache.Cache;
 import com.blumeglobal.tests.cache.InputTestCasesCache;
 import com.blumeglobal.tests.controller.PathController;
 import com.blumeglobal.tests.model.excel.InputTestCases;
+import com.blumeglobal.tests.model.jsonEntity.jsonReqRes;
 import com.blumeglobal.tests.model.output.Argument;
 import com.blumeglobal.tests.model.output.MethodDeclaration;
 import com.blumeglobal.tests.model.excel.MethodParameter;
@@ -41,7 +42,7 @@ public class MethodDeclarationBuilderImpl implements MethodDeclarationBuilder {
     }
 
     @Override
-    public List<MethodDeclaration> buildMethodDeclarations(String className) {
+    public List<MethodDeclaration> buildMethodDeclarations(String className, List<InputTestCases> inputTestCasesList) {
 
         Path classPath = Cache.getPathFromClassDeclaration(Cache.getClassOrInterfaceDeclarationByClassName(className));
 
@@ -61,12 +62,12 @@ public class MethodDeclarationBuilderImpl implements MethodDeclarationBuilder {
             //methodDeclaration.setEntityType(entity);
             methodDeclaration.setMethodName(methodName);
 
-            String requestProperties = InputTestCasesCache.getRequestPropertyStringByClassNameAndMethodName(className,methodName);
-            List<String> requestPropertiesList = getRequestPropertiesAsList(requestProperties);
+            String assertionParameters = InputTestCasesCache.getAssertionParametersStringByClassNameAndMethodName(className,methodName,inputTestCasesList);
+            List<String> assertionParametersList = getRequestPropertiesAsList(assertionParameters);
 
-            methodDeclaration.setRequestProperties(requestPropertiesList);
+            methodDeclaration.setAssertionParameters(assertionParametersList);
 
-            methodDeclaration.setReturnValue(javaParserMethodDeclaration.getType().asClassOrInterfaceType().getTypeArguments().get().get(0).asString());
+            methodDeclaration.setReturnValue(javaParserMethodDeclaration.getType().asClassOrInterfaceType().getTypeArguments().get().get(0).asString()); //it is the value inside this angular bracket ResponseEntity<" ">
 
             NodeList<Parameter> parameterNodeList = javaParserMethodDeclaration.getParameters();
             List<Parameter> parameterList = new ArrayList<>(parameterNodeList);
@@ -80,7 +81,7 @@ public class MethodDeclarationBuilderImpl implements MethodDeclarationBuilder {
                     ClassOrInterfaceType type = (ClassOrInterfaceType) parameter.getType();
                     argument.setDataType(type.getName().getIdentifier());
 
-                    if(parameter.getAnnotations().get(0).getNameAsString().equals("RequestBody")) {
+                    if(parameter.getAnnotations().isNonEmpty() && parameter.getAnnotations().get(0).getNameAsString().equals("RequestBody")) {
 
                         argument.setAnnotationType("RequestBody");
                         methodDeclaration.setHasRequestBody(true);
@@ -89,13 +90,13 @@ public class MethodDeclarationBuilderImpl implements MethodDeclarationBuilder {
 
                     }
 
-                    if(parameter.getAnnotations().get(0).getNameAsString().equals("RequestParam"))
+                    if(parameter.getAnnotations().isNonEmpty() && parameter.getAnnotations().get(0).getNameAsString().equals("RequestParam"))
                     {
                         methodDeclaration.setHasRequestParam(true);
                         argument.setAnnotationType("RequestParam");
                     }
 
-                    if(parameter.getAnnotations().get(0).getNameAsString().equals("PathVariable"))
+                    if(parameter.getAnnotations().isNonEmpty() && parameter.getAnnotations().get(0).getNameAsString().equals("PathVariable"))
                     {
                         methodDeclaration.setHasPathVariable(true);
                         argument.setAnnotationType("PathVariable");
@@ -105,21 +106,34 @@ public class MethodDeclarationBuilderImpl implements MethodDeclarationBuilder {
 
                     //if apirequest is not present then,the entity type will be set by responsetype
                     if(methodDeclaration.getEntityType() == null){
-                        methodDeclaration.setEntityType(javaParserMethodDeclaration.getType().asClassOrInterfaceType().getChildNodes().get(1).getChildNodes().get(1).toString());
+                        Node methodResponseType = javaParserMethodDeclaration.getType().asClassOrInterfaceType().getChildNodes().get(1); //ApiResponse (which will be there in all cases)
+                        if(methodResponseType.getChildNodes().size() == 1) {
+                            methodDeclaration.setEntityType("EntityName"); //if the return type is RequestEntity<ApiResponse>
+                            methodDeclaration.setReturnEntityType("EntityName");
+                        } else {
+                            methodDeclaration.setEntityType(javaParserMethodDeclaration.getType().asClassOrInterfaceType().getChildNodes().get(1).getChildNodes().get(0).toString());  //if the return type is RequestEntity<ApiResponse<Entity>>>
+
+                        }
                     }
 
-                    methodDeclaration.setReturnEntityType(javaParserMethodDeclaration.getType().asClassOrInterfaceType().getChildNodes().get(1).getChildNodes().get(1).toString());
+                    if(methodDeclaration.getReturnEntityType() == null)
+                    {
+                        methodDeclaration.setReturnEntityType(javaParserMethodDeclaration.getType().asClassOrInterfaceType().getChildNodes().get(1).getChildNodes().get(1).toString());
+                    }
 
 
                     if (argument.getName().equals("apiRequest")) {
 
                         argument.setValue("apijson");
 
-                        Path pathToJsonFile = PathGeneratorUtil.getPathForJsonRequestGeneration(classPath,className,methodName);
-                        argument.setPathToJsonFile(pathToJsonFile.toString().replace("\\","\\\\"));
-                        String value= ExcelToJsonDataGeneratorUtil.generateJsonString(excelForJsonPath,className,methodName);
+                        Path pathToJsonDirectory = PathGeneratorUtil.getPathForJsonRequestGeneration(classPath,className,methodName);
+                        List<Map<String,String>> jsonRequestResponsePaths = new ArrayList<>();
+                        List<jsonReqRes> jsonReqResList = ExcelToJsonDataGeneratorUtil.generateJsonString(excelForJsonPath,className,methodName);
+                        generateAndWriteJson(pathToJsonDirectory.toString(),jsonReqResList,jsonRequestResponsePaths);
+                        methodDeclaration.setPathToJsonFiles(jsonRequestResponsePaths);
+                        argument.setPathToJsonFile("dfhajfdakka");
 
-                        generateAndWriteJson(pathToJsonFile.toString(),value);
+
                     }
                     else {
                         argument.setValue(parameterValue);
@@ -141,7 +155,7 @@ public class MethodDeclarationBuilderImpl implements MethodDeclarationBuilder {
         return null;
     }
 
-    private List<String> getRequestPropertiesAsList(String inputString){
+    private List<String> getRequestPropertiesAsList(String inputString) {
         String[] partsArray = inputString.split(",");
         List<String> resultList = new ArrayList<>();
 
@@ -153,17 +167,6 @@ public class MethodDeclarationBuilderImpl implements MethodDeclarationBuilder {
         return resultList;
     }
 
-    private List<String> getMethodNamesByClassName (String className){
-        List<InputTestCases> inputTestCases = InputTestCasesCache.getInputTestCasesList();
-        List<String> methodsList = new ArrayList<>();
-        for(InputTestCases inputTestCase: inputTestCases){
-            if(inputTestCase.getClassName().equals(className)){
-                methodsList.add(inputTestCase.getMethodName());
-            }
-        }
-        return methodsList;
-    }
-
     private List<String> getGivenMethodNamesByClassName(String className) {
         return Optional.ofNullable(inputMethodParams).orElseGet(Collections::emptyList).stream()
                 .filter(inputMethodParam->inputMethodParam.getClassName().equalsIgnoreCase(className))
@@ -172,11 +175,34 @@ public class MethodDeclarationBuilderImpl implements MethodDeclarationBuilder {
                 .collect(Collectors.toList());
     }
 
-    private static void generateAndWriteJson(String outputPath,String jsonContent){
+    private static void generateAndWriteJson(String outputPath,List<jsonReqRes> jsonReqResList,List<Map<String,String>>jsonRequestResponsePath){
         try{
             Path outputFile = Paths.get(outputPath);
             Files.createDirectories(outputFile.getParent());
-            Files.write(outputFile, jsonContent.getBytes());
+
+            for (int i = 0; i < jsonReqResList.size(); i++) {
+
+                jsonReqRes jsonReqResObj = jsonReqResList.get(i);
+                String requestContent = jsonReqResObj.getRequestJson();
+                String responseContent = jsonReqResObj.getReponseJson();
+
+                Path requestFile = outputFile.resolve("request_" + i + ".json");
+                Path responseFile = outputFile.resolve("response_" + i + ".json");
+
+
+                // Create the parent directories if not already present
+                Files.createDirectories(requestFile.getParent());
+                Files.createDirectories(responseFile.getParent());
+
+
+                Files.write(requestFile, requestContent.getBytes());
+                Files.write(responseFile, responseContent.getBytes());
+
+                Map<String, String> entry = new HashMap<>();
+                entry.put(requestFile.toString().replace("\\","\\\\"),responseFile.toString().replace("\\","\\\\"));
+                jsonRequestResponsePath.add(entry);
+            }
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -203,7 +229,7 @@ public class MethodDeclarationBuilderImpl implements MethodDeclarationBuilder {
 
 
             // Check if the current sheet matches the desired sheet name
-            if (sheet.getSheetName().equalsIgnoreCase(methodName+"_Request")) {
+            if (sheet.getSheetName().equalsIgnoreCase(methodName)) {
                 // If found, return the path of the Excel file
                 return Paths.get(workbookPath);
             }
