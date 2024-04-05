@@ -63,7 +63,11 @@ public class MethodDeclarationBuilderImpl implements MethodDeclarationBuilder {
             methodDeclaration.setMethodName(methodName);
 
             String assertionParameters = InputTestCasesCache.getAssertionParametersStringByClassNameAndMethodName(className,methodName,inputTestCasesList);
-            List<String> assertionParametersList = getRequestPropertiesAsList(assertionParameters);
+            List<String>assertionParametersList= new ArrayList<>();
+
+            if(assertionParameters!=null){
+                assertionParametersList = getAssertionParametersAsList(assertionParameters);
+            }
 
             methodDeclaration.setAssertionParameters(assertionParametersList);
 
@@ -155,7 +159,7 @@ public class MethodDeclarationBuilderImpl implements MethodDeclarationBuilder {
         return null;
     }
 
-    private List<String> getRequestPropertiesAsList(String inputString) {
+    private List<String> getAssertionParametersAsList(String inputString) {
         String[] partsArray = inputString.split(",");
         List<String> resultList = new ArrayList<>();
 

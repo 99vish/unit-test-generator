@@ -120,7 +120,6 @@ public class PathController {
 
         completedExcelPath = excelPathRequest.getCompletedExcelPath();
         String className = excelPathRequest.getClassName();
-        System.out.println("ye khaali hai" + inputTestCasesByClassNameMap.size());
         TestGenerator.generateTests(className,inputTestCasesByClassNameMap.get(className));
 
         return ResponseEntity.ok("Tests Generated Successfully");
