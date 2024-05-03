@@ -43,6 +43,12 @@ public class PathGeneratorUtil {
         return path.getRoot().resolve(path.subpath(0,mainIndex+1)).resolveSibling("test").resolve("resources").resolve(className).resolve(methodName);
     }
 
+    public static Path getPathForJsonResponseGeneration(Path path,String className,String methodName){
+
+        int mainIndex = getKeyWordIndex("main",path);
+        return path.getRoot().resolve(path.subpath(0,mainIndex+1)).resolveSibling("test").resolve("resources").resolve(className).resolve(methodName);
+    }
+
     private static int getKeyWordIndex(String word,Path path){
         int index= -1;
         for (int i=0;i<path.getNameCount();i++){

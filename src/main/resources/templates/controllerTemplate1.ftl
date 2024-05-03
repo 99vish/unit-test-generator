@@ -45,11 +45,11 @@ public class ${className}Test extends AbstractIntegrationTest {
          <#if method.isApiResponsePresent>
 
             @Test
-            public void ${method.methodName}_${method.methodNumber}Test() throws Exception {
+            public void ${method.methodName}Test() throws Exception {
 
             <#list method.arguments as argument>
             <#if argument.dataType == "ApiRequest">
-                String pathToRequestJson = "${method.pathToRequestJson}";
+                String pathToRequestJson = ${method.pathToRequestJson};
                 List<${method.requestEntityType}> requestObjects = JsonFileReaderUtil.readRequestEntities(pathToRequestJson,${method.requestEntityType}.class);
                 ApiRequest<${method.requestEntityType}> apiRequest = new ApiRequest<>();
             <#else>
@@ -94,7 +94,7 @@ public class ${className}Test extends AbstractIntegrationTest {
 
 
             <#if method.hasRequestBody>
-                String pathToResponseJson = "${method.pathToResponseJson}";
+                String pathToResponseJson = ${method.pathToResponseJson};
                 ApiResponse<${method.responseEntityType}> expectedResponse = JsonFileReaderUtil.readResponseEntities(pathToResponseJson,${method.responseEntityType}.class);
                 List<${method.responseEntityType}> expectedList = expectedResponse.getResults();
                 assertNotNull(expectedList);
@@ -126,15 +126,21 @@ public class ${className}Test extends AbstractIntegrationTest {
             </#list>
             </#if>
                 }
+
             </#if>
+
+
             }
+
+
+
          <#else>
             @Test
-            public void ${method.methodName}_${method.methodNumber}Test() throws Exception {
+            public void ${method.methodName}Test() throws Exception {
 
             <#list method.arguments as argument>
             <#if argument.dataType == "ApiRequest">
-                String pathToRequestJson = "${method.pathToRequestJson}";
+                String pathToRequestJson = ${method.pathToRequestJson};
             <#else>
                 ${argument.dataType} ${argument.name} = <#if argument.dataType == "String">"${argument.value}"<#else>${argument.value}</#if>;
             </#if>
@@ -152,7 +158,7 @@ public class ${className}Test extends AbstractIntegrationTest {
 
          <#if method.isApiResponsePresent>
             @Test
-            public void ${method.methodName}_${method.methodNumber}Test() throws Exception {
+            public void ${method.methodName}Test() throws Exception {
 
             <#list method.arguments as argument>
                 ${argument.dataType} ${argument.name} = <#if argument.dataType == "String">"${argument.value}"<#else>${argument.value}</#if>;
@@ -215,7 +221,7 @@ public class ${className}Test extends AbstractIntegrationTest {
          <#else>
 
             @Test
-            public void ${method.methodName}_${method.methodNumber}Test() throws Exception {
+            public void ${method.methodName}Test() throws Exception {
 
             <#list method.arguments as argument>
                 ${argument.dataType} ${argument.name} = <#if argument.dataType == "String">"${argument.value?default('')}"<#else>${argument.value?default('')}</#if>;
@@ -236,7 +242,7 @@ public class ${className}Test extends AbstractIntegrationTest {
       <#if method.isApiResponsePresent>
 
             @Test
-            public void ${method.methodName}_${method.methodNumber}Test() throws Exception {
+            public void ${method.methodName}Test() throws Exception {
 
             <#list method.arguments as argument>
                 ${argument.dataType} ${argument.name} = <#if argument.dataType == "String">"${argument.value}"<#else>${argument.value}</#if>;
@@ -288,10 +294,16 @@ public class ${className}Test extends AbstractIntegrationTest {
 
                 }
 
+
+                ResponseEntity<${method.returnValue}> actualResponse = ${classInstance}.${method.methodName}(<#list method.arguments as argument>${argument.name}<#sep>, </#sep></#list>);
+                assertNotNull(actualResponse);
+                Object body = actualResponse.getBody();
+                assertNotNull(body);
+
             }
       <#else>
             @Test
-            public void ${method.methodName}_${method.methodNumber}Test() throws Exception {
+            public void ${method.methodName}Test() throws Exception {
 
             <#list method.arguments as argument>
                 ${argument.dataType} ${argument.name} = <#if argument.dataType == "String">"${argument.value}"<#else>${argument.value}</#if>;

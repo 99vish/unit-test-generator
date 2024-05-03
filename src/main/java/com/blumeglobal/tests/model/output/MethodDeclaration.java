@@ -1,11 +1,9 @@
 package com.blumeglobal.tests.model.output;
 
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -21,18 +19,33 @@ public class MethodDeclaration {
 
     private String exception;
 
-    private Boolean hasRequestBody;
+    private Boolean hasRequestBody = false;
 
     private Boolean hasPathVariable;
 
     private Boolean hasRequestParam;
 
-    private String entityType = null;
-
-    private String returnEntityType = null;
-
     private List<String> assertionParameters ;
 
-    private List<Map<String,String>> pathToJsonFiles;
+    private Boolean isApiResponsePresent = false;
+
+    private String pathToResponseJson ; //for cases when there is no request json, only response json is present
+
+    private String requestEntityType = null;
+
+    private String responseEntityType = null;
+
+    private Boolean isApiRequestPresent = false;
+
+    private Boolean isResponseWildCard = false;
+
+    private String pathToRequestJson;
+
+    private Map<String,List<String>> resultHeadersAndValidationChecks;
+
+    private Map<String,List<String>> headersAndValidationChecks;
+
+    private Integer methodNumber;
+
 
 }

@@ -9,6 +9,7 @@ import com.blumeglobal.tests.builder.interfaces.MethodDeclarationBuilder;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
 
+import java.io.IOException;
 import java.util.*;
 
 public class ClassDeclarationBuilderImpl implements ClassDeclarationBuilder {
@@ -28,7 +29,7 @@ public class ClassDeclarationBuilderImpl implements ClassDeclarationBuilder {
     }
 
     @Override
-    public TestClassDeclaration buildClassDeclarations() {
+    public TestClassDeclaration buildClassDeclarations() throws IOException {
 
 
         TestClassDeclaration classDeclaration = new TestClassDeclaration();

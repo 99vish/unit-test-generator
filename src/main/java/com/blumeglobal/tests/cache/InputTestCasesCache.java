@@ -34,7 +34,6 @@ public class InputTestCasesCache {
     public static String getAssertionParametersStringByClassNameAndMethodName (String className,String methodName,List<InputTestCases> inputTestCasesList) {
         for(InputTestCases inputTestCase:inputTestCasesList){
             if(inputTestCase.getClassName().equals(className) && inputTestCase.getMethodName().equals(methodName)) {
-                System.out.println(inputTestCase.getClassName() + "." + inputTestCase.getMethodName() + "." +inputTestCase.getAssertionParametersString());
                 return inputTestCase.getAssertionParametersString();
             }
         }

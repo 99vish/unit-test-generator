@@ -16,10 +16,13 @@ public class Argument {
 
     private String dataType;
 
+    private Boolean hasAnnotation = false;
+
     private String annotationType = "";
 
-
     private String pathToJsonFile;
+
+    private Boolean isApiRequest = false ;
 
 
 

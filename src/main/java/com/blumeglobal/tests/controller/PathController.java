@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
 
@@ -35,9 +36,9 @@ public class PathController {
     @Getter
     public  List<InputTestCases> inputTestCasesList = new ArrayList<>();
     @Getter
-    public  List<String> inputMethodNamesByClassName = new ArrayList<>();
+    public  static List<String> inputMethodNamesByClassName = new ArrayList<>();
     @Getter
-    public  Map<String, List<InputTestCases>> inputTestCasesByClassNameMap = new HashMap<>();
+    public  static Map<String, List<InputTestCases>> inputTestCasesByClassNameMap = new HashMap<>();
     @Getter
     public  List<String> inputClassNames = new ArrayList<>();
 
@@ -59,7 +60,7 @@ public class PathController {
     }
 
     @PostMapping("/generateTemplatesFromSelection")
-    public ResponseEntity<List<ExcelTemplate>> generateTemplates(@RequestBody InputTestCasesRequest inputTestCasesRequest){
+    public ResponseEntity<List<ExcelTemplate>> generateTemplates(@RequestBody InputTestCasesRequest inputTestCasesRequest) {
 
         inputTestCasesList.clear();
         inputMethodNamesByClassName.clear();
@@ -67,13 +68,6 @@ public class PathController {
         inputClassNames.clear();
 
         inputTestCasesList=inputTestCasesRequest.getInputTestCasesList();
-//        for(InputTestCasesRequest inputTestCasesRequest : inputTestCasesRequests){
-//            InputTestCases inputTestCase = new InputTestCases();
-//            inputTestCase.setClassName(inputTestCasesRequest.getClassName());
-//            inputTestCase.setMethodName(inputTestCasesRequest.getMethodName());
-//            inputTestCase.setAssertionParameters(inputTestCasesRequest.getAssertionParameter());
-//            inputTestCasesList.add(inputTestCase);
-//        }
 
         InputTestCasesCache inputTestCasesCache = new InputTestCasesCache();
         inputTestCasesCache.populateInputTestCasesByClassNameMap(inputTestCasesList,inputTestCasesByClassNameMap,inputClassNames);
@@ -99,7 +93,7 @@ public class PathController {
         projectPath = pathRequest.getProjectPath();
         excelPath = pathRequest.getExcelPath();
 
-        Cache.cacheClassOrInterfaceDeclarations(projectPath.toString());//883
+        Cache.cacheClassOrInterfaceDeclarations(projectPath.toString());
 
         InputTestCasesCache inputTestCasesCache =  new InputTestCasesCache();
         inputTestCasesCache.cacheInputTestCases(excelPath,inputTestCasesList,inputTestCasesByClassNameMap,inputMethodNamesByClassName,inputClassNames);
@@ -119,8 +113,14 @@ public class PathController {
     public ResponseEntity<String> generateTests(@RequestBody ExcelPathRequest excelPathRequest) {
 
         completedExcelPath = excelPathRequest.getCompletedExcelPath();
-        String className = excelPathRequest.getClassName();
-        TestGenerator.generateTests(className,inputTestCasesByClassNameMap.get(className));
+        inputTestCasesByClassNameMap.forEach((className, inputTestCasesList) -> {
+            try {
+                TestGenerator.generateTests(className, inputTestCasesList);
+            } catch (IOException e) {
+                // Handle the exception
+                e.printStackTrace();
+            }
+        });
 
         return ResponseEntity.ok("Tests Generated Successfully");
     }
