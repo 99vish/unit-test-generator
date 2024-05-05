@@ -2,9 +2,7 @@ package com.blumeglobal.tests.builder;
 
 import com.blumeglobal.tests.cache.Cache;
 import com.blumeglobal.tests.cache.InputTestCasesCache;
-import com.blumeglobal.tests.controller.PathController;
 import com.blumeglobal.tests.model.excel.InputTestCases;
-import com.blumeglobal.tests.model.jsonEntity.jsonReqRes;
 import com.blumeglobal.tests.model.output.Argument;
 import com.blumeglobal.tests.model.output.MethodDeclaration;
 import com.blumeglobal.tests.model.excel.MethodParameter;
@@ -17,10 +15,6 @@ import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.github.javaparser.ast.type.PrimitiveType;
 import com.github.javaparser.ast.type.Type;
-import org.apache.poi.ss.usermodel.*;
-
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -28,7 +22,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
+
 
 public class MethodDeclarationBuilderImpl implements MethodDeclarationBuilder {
 
@@ -175,6 +169,7 @@ public class MethodDeclarationBuilderImpl implements MethodDeclarationBuilder {
                     if (!(methodParam.getParameterName().equals("Request") || methodParam.getParameterName().equals("Response"))) {
                         Argument argument = new Argument();
                         Parameter parameter = getJavaParserParameter(methodParam, parameterList);
+                        assert parameter != null;
                         String parameterName = parameter.getName().getIdentifier();
                         argument.setName(parameterName);
 
@@ -235,140 +230,6 @@ public class MethodDeclarationBuilderImpl implements MethodDeclarationBuilder {
         return methodDeclarations;
     }
 
-
-
-//                if(!parameterList.isEmpty()) {
-//                    for (Parameter parameter : parameterList) {
-//
-//                        Argument argument = new Argument();
-//                        String parameterName = parameter.getName().getIdentifier();
-//                        argument.setName(parameterName);
-//
-//                        Type parameterType = parameter.getType();
-//                        if (parameterType instanceof ClassOrInterfaceType) {
-//                            ClassOrInterfaceType type = (ClassOrInterfaceType) parameterType;
-//                            argument.setDataType(type.getName().getIdentifier());
-//                        } else if (parameterType != null) {
-//                            PrimitiveType type = (PrimitiveType) parameterType;
-//                            argument.setDataType(type.getType().asString());
-//                        } else {
-//                            // Handle other types as needed
-//                            argument.setDataType("Unknown");
-//                        }
-//
-//
-//                        if(parameter.getAnnotations().isNonEmpty() && parameter.getAnnotations().get(0).getNameAsString().equals("RequestBody")) {
-//                            argument.setHasAnnotation(true);
-//                            argument.setAnnotationType("RequestBody");
-//                            methodDeclaration.setHasRequestBody(true);
-//                            if(parameterType instanceof ClassOrInterfaceType && ((ClassOrInterfaceType) parameter.getType()).getName().getIdentifier().equals("ApiRequest")){
-//                                argument.setIsApiRequest(true);
-//                                methodDeclaration.setIsApiRequestPresent(true);
-//                                if( ((ClassOrInterfaceType) parameter.getType()).getTypeArguments().isPresent()){
-//                                    methodDeclaration.setRequestEntityType(((ClassOrInterfaceType) parameter.getType()).getTypeArguments().get().get(0).asClassOrInterfaceType().asString());
-//                                    if(methodDeclaration.getIsApiResponsePresent() && methodDeclaration.getResponseEntityType()==null){
-//                                        methodDeclaration.setResponseEntityType(methodDeclaration.getRequestEntityType());
-//                                    }
-//                                } else {
-//                                    methodDeclaration.setRequestEntityType("RequestEntity");
-//                                    if(methodDeclaration.getResponseEntityType()==null){
-//                                        methodDeclaration.setResponseEntityType("responseEntity");
-//                                    }
-//                                }
-//                            } else {
-//                                argument.setDataType(((ClassOrInterfaceType) parameter.getType()).getName().getIdentifier());
-//                            }
-//                            //if there is a request body present then the entity inside the requestBody should be used to take the entity type
-//                            //methodDeclaration.setEntityType(parameter.getType().asClassOrInterfaceType().getChildNodes().get(1).toString());
-//
-//                        }
-//
-//                        if(methodDeclaration.getResponseEntityType()==null){
-//                            methodDeclaration.setResponseEntityType("responseEntity");
-//                        }
-//                        if(methodDeclaration.getRequestEntityType()==null){
-//                            methodDeclaration.setRequestEntityType("RequestEntity");
-//                        }
-//
-//                        if(parameter.getAnnotations().isNonEmpty() && parameter.getAnnotations().get(0).getNameAsString().equals("RequestParam"))
-//                        {
-//                            argument.setHasAnnotation(true);
-//                            methodDeclaration.setHasRequestParam(true);
-//                            argument.setAnnotationType("RequestParam");
-//                        }
-//
-//                        if(parameter.getAnnotations().isNonEmpty() && parameter.getAnnotations().get(0).getNameAsString().equals("PathVariable"))
-//                        {
-//                            argument.setHasAnnotation(true);
-//                            methodDeclaration.setHasPathVariable(true);
-//                            argument.setAnnotationType("PathVariable");
-//                        }
-//
-//                        String parameterValue = getMethodParameter(className, javaParserMethodDeclaration.getNameAsString(), parameter.getNameAsString());
-//
-//
-//                        if (argument.getIsApiRequest()) {
-//
-//                            Path pathToJsonDirectory = PathGeneratorUtil.getPathForJsonRequestGeneration(classPath,className,methodName);
-//                            List<Map<String,String>> jsonRequestResponsePaths = new ArrayList<>();
-//                            ExcelToJsonDataGeneratorUtil excelToJsonDataGeneratorUtil = new ExcelToJsonDataGeneratorUtil();
-//                            List<jsonReqRes> jsonReqResList = excelToJsonDataGeneratorUtil.generateJsonString(excelPath,className,methodName);
-//                            methodDeclaration.setResultHeadersAndValidationChecks(excelToJsonDataGeneratorUtil.getResultHeadersAndValidationChecks());
-//                            methodDeclaration.setHeadersAndValidationChecks(excelToJsonDataGeneratorUtil.getHeadersAndValidationChecks());
-//                            generateAndWriteJson(pathToJsonDirectory.toString(),jsonReqResList,jsonRequestResponsePaths);
-//                            methodDeclaration.setPathToJsonFiles(jsonRequestResponsePaths);
-//
-//
-//                        }
-//                        else {
-//                            argument.setValue(parameterValue);
-//                        }
-//
-//                        if(!methodDeclaration.getIsApiRequestPresent() && methodDeclaration.getIsApiResponsePresent()){
-//                            Path pathToJsonDirectory = PathGeneratorUtil.getPathForJsonResponseGeneration(classPath,className,methodName);
-//                            ExcelToJsonDataGeneratorUtil excelToJsonDataGeneratorUtil = new ExcelToJsonDataGeneratorUtil();
-//                            String responseJson = excelToJsonDataGeneratorUtil.generateResponseJsonString(excelPath,className,methodName);
-//                            try {
-//                                methodDeclaration.setPathToResponseJson(generateAndWriteResponseJson(pathToJsonDirectory.toString(),responseJson));
-//                            } catch (IOException e) {
-//                                throw new RuntimeException(e);
-//                            }
-//
-//                        }
-//
-//
-//                    }
-//                }
-//
-//
-//            }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//    private String getMethodParameter(String className, String methodName, String parameterName) {
-//        for (MethodParameter parameter : inputMethodParams) {
-//            if (parameter.getClassName().equalsIgnoreCase(className) && parameter.getMethodName().equalsIgnoreCase(methodName) && parameter.getParameterName().equalsIgnoreCase(parameterName)) {
-//                return parameter.getParameterValue();
-//            }
-//        }
-//        return null;
-//    }
-
     private List<String> getAssertionParametersAsList(String inputString) {
         String[] partsArray = inputString.split(",");
         List<String> resultList = new ArrayList<>();
@@ -380,15 +241,6 @@ public class MethodDeclarationBuilderImpl implements MethodDeclarationBuilder {
 
         return resultList;
     }
-
-//    private List<String> getGivenMethodNamesByClassName(String className) {
-//        return Optional.ofNullable(inputMethodParams).orElseGet(Collections::emptyList).stream()
-//                .filter(inputMethodParam->inputMethodParam.getClassName().equalsIgnoreCase(className))
-//                .map(MethodParameter::getMethodName)
-//                .distinct()
-//                .collect(Collectors.toList());
-//    }
-
 
     private static String writeJson(String outputPath, String content, int j ,String type){
         try {
@@ -408,118 +260,75 @@ public class MethodDeclarationBuilderImpl implements MethodDeclarationBuilder {
         return null;
     }
 
-    private static void generateAndWriteJson(String outputPath,List<jsonReqRes> jsonReqResList,List<Map<String,String>>jsonRequestResponsePath){
-        try{
-            Path outputFile = Paths.get(outputPath);
-            Files.createDirectories(outputFile.getParent());
-
-            for (int i = 0; i < jsonReqResList.size(); i++) {
-
-                jsonReqRes jsonReqResObj = jsonReqResList.get(i);
-                String requestContent = jsonReqResObj.getRequestJson();
-                String responseContent = jsonReqResObj.getReponseJson();
-
-                Path requestFile = outputFile.resolve("request_" + i + ".json");
-                Path responseFile = outputFile.resolve("response_" + i + ".json");
-
-
-                // Create the parent directories if not already present
-                Files.createDirectories(requestFile.getParent());
-                Files.createDirectories(responseFile.getParent());
-
-
-                Files.write(requestFile, requestContent.getBytes());
-                Files.write(responseFile, responseContent.getBytes());
-
-                Map<String, String> entry = new HashMap<>();
-                entry.put(requestFile.toString().replace("\\","\\\\"),responseFile.toString().replace("\\","\\\\"));
-                jsonRequestResponsePath.add(entry);
-            }
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private static Path getRequestSheetPath(String workbookPath){
-        FileInputStream inputStream = null;
-        try {
-            inputStream = new FileInputStream(workbookPath);
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException(e);
-        }
-
-        // Create a workbook object
-        Workbook workbook = null;
-        try {
-            workbook = WorkbookFactory.create(inputStream);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        Sheet sheet = workbook.getSheet("RequestsAndResponses");
-        if (sheet != null) {
-            // If found, return the path of the Excel file
-            return Paths.get(workbookPath);
-        }
-
-
-        // If the sheet is not found, return null
-        return null;
-    }
-
-    private static Path getMethodSpecificationsSheet(String workbookPath){
-        FileInputStream inputStream = null;
-        try {
-            inputStream = new FileInputStream(workbookPath);
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException(e);
-        }
-
-        // Create a workbook object
-        Workbook workbook = null;
-        try {
-            workbook = WorkbookFactory.create(inputStream);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        Sheet sheet = workbook.getSheet("MethodDetails");
-        if (sheet != null) {
-            // If found, return the path of the Excel file
-            return Paths.get(workbookPath);
-        }
-
-
-        // If the sheet is not found, return null
-        return null;
-    }
-
-    private static String generateAndWriteResponseJson(String outputPath,String responseJsonString) throws IOException {
-        Path outputFile = Paths.get(outputPath);
-        try {
-            Files.createDirectories(outputFile.getParent());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        Path responseFile = outputFile.resolve("response.json");
-
-        try {
-            Files.createDirectories(responseFile.getParent());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        Files.write(responseFile, responseJsonString.getBytes());
-
-        return responseFile.toString().replace("\\","\\\\");
-    }
-
-
     private Parameter getJavaParserParameter(MethodParameter methodParameter, List<Parameter> parameterList) {
 
-        for (Parameter param : para
+        for (Parameter param : parameterList) {
+            if (param.getNameAsString().equals(methodParameter.getParameterName())) {
+                return param;
+            }
+        }
+        return null;
+    }
+
+
+    private Map<String,List<String>> getHeadersAndValidationChecksFromJson(String jsonContent) throws IOException {
+        try {
+            return parseJson(jsonContent);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static Map<String, List<String>> parseJson(String json) throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode rootNode = mapper.readTree(json);
+        Map<String, List<String>> result = new HashMap<>();
+        traverseJson(rootNode, result);
+        return result;
+    }
+
+
+
+    private static void traverseJson(JsonNode node, Map<String, List<String>> result) {
+        if (node.isObject()) {
+            Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
+            while (fields.hasNext()) {
+                Map.Entry<String, JsonNode> field = fields.next();
+                extractPattern(field.getKey(), result);
+                traverseJson(field.getValue(), result);
+            }
+        } else if (node.isArray()) {
+            for (JsonNode arrayItem : node) {
+                traverseJson(arrayItem, result);
+            }
+        }
+    }
+
+    private static void extractPattern(String key, Map<String, List<String>> result) {
+        Pattern pattern = Pattern.compile("([^\\{]*)\\{(.*?)\\}");
+        Matcher matcher = pattern.matcher(key);
+        List<String> matches = result.computeIfAbsent(key, k -> new ArrayList<>());
+        while (matcher.find()) {
+            String originalName = matcher.group(1).trim();
+            String valueInsideCurlyBraces = matcher.group(2).trim();
+
+            // Split the value inside curly braces by comma and add each part to the list
+            String[] values = valueInsideCurlyBraces.split(",");
+            for (String value : values) {
+                matches.add(value.trim());
+            }
+
+            // Replace the key with the name before the curly braces open
+            String replacedKey = key.replace(matcher.group(), originalName);
+            if (!replacedKey.equals(key)) {
+                // Remove the original key and add the replaced key
+                List<String> value = result.remove(key);
+                result.put(replacedKey, value);
+            }
+        }
+    }
+
+
 
 
 

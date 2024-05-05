@@ -126,14 +126,8 @@ public class ${className}Test extends AbstractIntegrationTest {
             </#list>
             </#if>
                 }
-
             </#if>
-
-
             }
-
-
-
          <#else>
             @Test
             public void ${method.methodName}Test() throws Exception {
@@ -152,10 +146,7 @@ public class ${className}Test extends AbstractIntegrationTest {
                 assertNotNull(body);
             }
          </#if>
-
-
       <#else>
-
          <#if method.isApiResponsePresent>
             @Test
             public void ${method.methodName}Test() throws Exception {
@@ -200,26 +191,21 @@ public class ${className}Test extends AbstractIntegrationTest {
             </#if>
             </#if>
 
-            <#assign Properties = method.assertionParameters>
+                <#assign Properties = method.assertionParameters>
 
-            ApiResponse<${method.responseEntityType}> expectedResponse = JsonFileReaderUtil.readResponseEntities(pathToResponseJson,${method.responseEntityType}.class);
-            List<${method.responseEntityType}> expectedList = expectedResponse.getResults();
-            assertNotNull(expectedList);
-            assertEquals(expectedList.size(), actualList.size());
+                ApiResponse<${method.responseEntityType}> expectedResponse = JsonFileReaderUtil.readResponseEntities(pathToResponseJson,${method.responseEntityType}.class);
+                List<${method.responseEntityType}> expectedList = expectedResponse.getResults();
+                assertNotNull(expectedList);
+                assertEquals(expectedList.size(), actualList.size());
 
-
-
-            for (int i = 0; i < expectedList.size(); i++) {
-            <#list Properties as property>
-               assertEquals(expectedList.get(i).get${property?cap_first}(),actualList.get(i).get${property?cap_first}());
-            </#list>
-            }
+                for (int i = 0; i < expectedList.size(); i++) {
+                <#list Properties as property>
+                   assertEquals(expectedList.get(i).get${property?cap_first}(),actualList.get(i).get${property?cap_first}());
+                </#list>
+                }
 
             }
-
-
          <#else>
-
             @Test
             public void ${method.methodName}Test() throws Exception {
 
@@ -232,15 +218,10 @@ public class ${className}Test extends AbstractIntegrationTest {
                 Object body = actualResponse.getBody();
                 assertNotNull(body);
             }
-
          </#if>
-
       </#if>
-
-
    <#else>
       <#if method.isApiResponsePresent>
-
             @Test
             public void ${method.methodName}Test() throws Exception {
 
@@ -291,9 +272,7 @@ public class ${className}Test extends AbstractIntegrationTest {
                 <#list Properties as property>
                    assertEquals(expectedList.get(i).get${property?cap_first}(),actualList.get(i).get${property?cap_first}());
                 </#list>
-
                 }
-
 
                 ResponseEntity<${method.returnValue}> actualResponse = ${classInstance}.${method.methodName}(<#list method.arguments as argument>${argument.name}<#sep>, </#sep></#list>);
                 assertNotNull(actualResponse);
@@ -315,10 +294,7 @@ public class ${className}Test extends AbstractIntegrationTest {
             assertEquals(actualResponse,expectedResponse);
 
             }
-
       </#if>
-
    </#if>
-
 </#list>
 }
