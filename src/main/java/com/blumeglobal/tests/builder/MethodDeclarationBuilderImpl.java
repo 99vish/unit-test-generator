@@ -8,6 +8,8 @@ import com.blumeglobal.tests.model.output.MethodDeclaration;
 import com.blumeglobal.tests.model.excel.MethodParameter;
 import com.blumeglobal.tests.builder.interfaces.MethodDeclarationBuilder;
 import com.blumeglobal.tests.util.PathGeneratorUtil;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javaparser.ast.NodeList;
@@ -151,8 +153,6 @@ public class MethodDeclarationBuilderImpl implements MethodDeclarationBuilder {
 
                     }
 
-
-
                     if (methodDeclaration.getResponseEntityType() == null) {
                         methodDeclaration.setResponseEntityType("responseEntity");
                     }
@@ -160,13 +160,33 @@ public class MethodDeclarationBuilderImpl implements MethodDeclarationBuilder {
                         methodDeclaration.setRequestEntityType("RequestEntity");
                     }
 
-
-
                 }
 
                 for (MethodParameter methodParam : methodParams) {
 
-                    if (!(methodParam.getParameterName().equals("Request") || methodParam.getParameterName().equals("Response"))) {
+                    if (methodParam.getParameterName().equals("Request")) {
+
+                        Path pathToJsonDirectory = PathGeneratorUtil.getPathForJsonGeneration(classPath, className, methodName);
+                        methodDeclaration.setPathToRequestJson(writeJson(pathToJsonDirectory.toString(), methodParam.getParameterValue(), j, "request"));
+
+                    } else if (methodParam.getParameterName().equals("Response")){
+
+                        Path pathToJsonDirectory = PathGeneratorUtil.getPathForJsonGeneration(classPath, className, methodName);
+                        methodDeclaration.setPathToResponseJson(writeJson(pathToJsonDirectory.toString(), methodParam.getParameterValue(), j, "response"));
+                        methodDeclaration.setResponseResultHeadersAndValidationChecks(getResponseResultHeadersAndValidationChecksFromJson(methodParam.getParameterValue()));
+                        methodDeclaration.setResponseHeadersAndValidationChecks(getResponseHeadersAndValidationChecksFromJson(methodParam.getParameterValue()));
+
+                    } else if (methodParam.getParameterName().equals("Request Headers")) {
+
+                        Path pathToJSonDirectory = PathGeneratorUtil.getPathForJsonGeneration(classPath, className, methodName);
+                        methodDeclaration.setPathToJwtJson(writeJson(pathToJSonDirectory.toString(), methodParam.getParameterValue(), j, "jwt"));
+
+                    } else if (methodParam.getParameterName().equals("Response Headers")) {
+
+                        methodDeclaration.setResponseHeaders(getHeadersFromJson(methodParam.getParameterValue()));
+
+                    } else {
+
                         Argument argument = new Argument();
                         Parameter parameter = getJavaParserParameter(methodParam, parameterList);
                         assert parameter != null;
@@ -198,31 +218,16 @@ public class MethodDeclarationBuilderImpl implements MethodDeclarationBuilder {
                             argument.setAnnotationType("PathVariable");
                         }
 
-
                         methodDeclaration.getArguments().add(argument);
 
-
-                    } else if (methodParam.getParameterName().equals("Request")) {
-
-                        Path pathToJsonDirectory = PathGeneratorUtil.getPathForJsonRequestGeneration(classPath, className, methodName);
-                        methodDeclaration.setPathToRequestJson(writeJson(pathToJsonDirectory.toString(), methodParam.getParameterValue(), j, "request"));
-                        methodDeclaration.setHeadersAndValidationChecks(getHeadersAndValidationChecksFromJson(methodParam.getParameterValue()));
-
-
-                    } else {
-
-                        Path pathToJsonDirectory = PathGeneratorUtil.getPathForJsonRequestGeneration(classPath, className, methodName);
-                        methodDeclaration.setPathToResponseJson(writeJson(pathToJsonDirectory.toString(), methodParam.getParameterValue(), j, "response"));
-                        methodDeclaration.setResultHeadersAndValidationChecks(getHeadersAndValidationChecksFromJson(methodParam.getParameterValue()));
                     }
-
 
                     if (methodDeclaration.getReturnValue() == null) {
                         methodDeclaration.setReturnValue("Object");
                     }
 
-
                 }
+                setArgumentOrder(javaParserMethodDeclaration,methodDeclaration.getArguments());
                 methodDeclarations.add(methodDeclaration);
             }
         }
@@ -271,7 +276,7 @@ public class MethodDeclarationBuilderImpl implements MethodDeclarationBuilder {
     }
 
 
-    private Map<String,List<String>> getHeadersAndValidationChecksFromJson(String jsonContent) throws IOException {
+    private Map<String,List<String>> getResponseHeadersAndValidationChecksFromJson(String jsonContent) throws IOException {
         try {
             return parseJson(jsonContent);
         } catch (IOException e) {
@@ -283,23 +288,23 @@ public class MethodDeclarationBuilderImpl implements MethodDeclarationBuilder {
         ObjectMapper mapper = new ObjectMapper();
         JsonNode rootNode = mapper.readTree(json);
         Map<String, List<String>> result = new HashMap<>();
-        traverseJson(rootNode, result);
+        traverseJson(rootNode, result, "");
         return result;
     }
 
 
 
-    private static void traverseJson(JsonNode node, Map<String, List<String>> result) {
+    private static void traverseJson(JsonNode node, Map<String, List<String>> result, String prefix) {
         if (node.isObject()) {
             Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
             while (fields.hasNext()) {
                 Map.Entry<String, JsonNode> field = fields.next();
-                extractPattern(field.getKey(), result);
-                traverseJson(field.getValue(), result);
-            }
-        } else if (node.isArray()) {
-            for (JsonNode arrayItem : node) {
-                traverseJson(arrayItem, result);
+                String fieldName = prefix.isEmpty() ? field.getKey() : prefix + "." + field.getKey();
+                if (!field.getKey().equals("results")) {
+                    extractPattern(toCamelCase(fieldName), result);
+                    traverseJson(field.getValue(), result, fieldName);
+                }
+
             }
         }
     }
@@ -320,13 +325,127 @@ public class MethodDeclarationBuilderImpl implements MethodDeclarationBuilder {
 
             // Replace the key with the name before the curly braces open
             String replacedKey = key.replace(matcher.group(), originalName);
+
+                List<String> value = result.remove(key);
+                result.put(replacedKey, value);
+
+        }
+    }
+
+    private Map<String,List<String>> getResponseResultHeadersAndValidationChecksFromJson(String jsonContent){
+        try {
+            return parseResultJson(jsonContent);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static Map<String, List<String>> parseResultJson(String json) throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode rootNode = mapper.readTree(json);
+        Map<String, List<String>> result = new HashMap<>();
+        traverseResultJson(rootNode, result , true, "");
+        return result;
+    }
+
+    private static void traverseResultJson(JsonNode node, Map<String, List<String>> result, Boolean isFirstObject, String prefix) {
+        if (node.isObject()) {
+            JsonNode resultsNode = node.get("results");
+            if (resultsNode != null && resultsNode.isArray()) {
+                for (JsonNode resultNode : resultsNode) {
+                    Iterator<Map.Entry<String, JsonNode>> fields = resultNode.fields();
+                    while (fields.hasNext()) {
+                        Map.Entry<String, JsonNode> field = fields.next();
+                        String fieldName = prefix.isEmpty() ? field.getKey() : prefix + "." + field.getKey();
+
+                        if(isFirstObject) {
+                            extractResultPattern(toCamelCase(fieldName), result);
+                            traverseResultJson(field.getValue(), result, false, fieldName );
+                        }
+                    }
+                    if(!isFirstObject){
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    private static void extractResultPattern(String key, Map<String, List<String>> result) {
+        Pattern pattern = Pattern.compile("([^\\{]*)\\{(.*?)\\}");
+        Matcher matcher = pattern.matcher(key);
+        List<String> matches = result.computeIfAbsent(key, k -> new ArrayList<>());
+        while (matcher.find()) {
+            String originalName = matcher.group(1).trim();
+            String valueInsideCurlyBraces = matcher.group(2).trim();
+
+            // Split the value inside curly braces by comma and add each part to the list
+            String[] values = valueInsideCurlyBraces.split(",");
+            for (String value : values) {
+                matches.add(value.trim());
+            }
+
+            // Replace the key with the name before the curly braces open
+            String replacedKey = key.replace(matcher.group(), originalName);
             if (!replacedKey.equals(key)) {
                 // Remove the original key and add the replaced key
                 List<String> value = result.remove(key);
                 result.put(replacedKey, value);
+
+
             }
         }
     }
+
+    private static Map<String, Object> getHeadersFromJson (String jsonContent) throws JsonProcessingException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        return objectMapper.readValue(jsonContent, new TypeReference<Map<String, Object>>() {});
+    }
+
+    private static String toCamelCase(String input) {
+        StringBuilder sb = new StringBuilder();
+        boolean capitalizeNext = false;
+        boolean addGet = false;
+        boolean addParenthesis = false;
+
+        for (char c : input.toCharArray()) {
+            if (c == '.') {
+                sb.append("()");
+                capitalizeNext = true;
+                addGet = true;
+            } else {
+                if (addGet) {
+                    sb.append(".");
+                    sb.append("get");
+                    addGet = false;
+                }
+                sb.append(capitalizeNext ? Character.toUpperCase(c) : c);
+                capitalizeNext = false;
+            }
+        }
+
+
+        return sb.toString();
+    }
+
+    private void setArgumentOrder(com.github.javaparser.ast.body.MethodDeclaration javaParserMethodDeclaration, List<Argument> arguments) {
+        int orderNumber = 1; // Starting order number
+
+        for(Parameter parameter: javaParserMethodDeclaration.getParameters()) {
+            String parameterName = parameter.getNameAsString();
+
+            // Search for the argument with the same name as the parameter
+            for (Argument argument : arguments) {
+                if (argument.getName().equals(parameterName)) {
+                    argument.setArgumentOrder(orderNumber++); // Set order number and then increment
+                    break; // Exit the inner loop once found
+                }
+            }
+        }
+    }
+
+
+
 
 
 

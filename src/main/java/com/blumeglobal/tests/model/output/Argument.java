@@ -24,6 +24,6 @@ public class Argument {
 
     private Boolean isApiRequest = false ;
 
-
+    private int argumentOrder;
 
 }

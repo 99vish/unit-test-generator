@@ -11,7 +11,11 @@ import com.blumeglobal.tests.model.output.TestClassDeclaration;
 import com.blumeglobal.tests.util.ExcelUtil;
 import com.blumeglobal.tests.util.FileReaderUtil;
 import com.blumeglobal.tests.util.PathGeneratorUtil;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import freemarker.template.Configuration;
+import freemarker.template.DefaultObjectWrapperBuilder;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
 import org.apache.poi.ss.usermodel.Row;
@@ -116,7 +120,7 @@ public class TestGenerator {
         return templateReader;
     }
 
-    private static Map<String,List<List<MethodParameter>>> getMethodNameToParametersMap(Workbook workbook, String className){
+    private static Map<String,List<List<MethodParameter>>> getMethodNameToParametersMap(Workbook workbook, String className) throws JsonProcessingException {
         List<InputTestCases > inputTestCasesList = PathController.getInputTestCasesByClassNameMap().get(className);
         List<String>methodNames = new ArrayList<>();
         for(InputTestCases inputTestCases: inputTestCasesList){
@@ -128,7 +132,7 @@ public class TestGenerator {
         return populateMethodNameToParametersMap(workbook,className,methodNames);
     }
 
-    private static Map<String,List<List<MethodParameter>>> populateMethodNameToParametersMap(Workbook workbook,String className, List<String>methodNames){
+    private static Map<String,List<List<MethodParameter>>> populateMethodNameToParametersMap(Workbook workbook,String className, List<String>methodNames) throws JsonProcessingException {
         Sheet sheet = workbook.getSheet("MethodDetails");
         Map<String,List<List<MethodParameter>>> requiredMap = new HashMap<>();
         for(String methodName:methodNames) {
@@ -141,12 +145,32 @@ public class TestGenerator {
                 Row currentRow = sheet.getRow(i);
                 List<MethodParameter> methodParams = new ArrayList<>();
                 for (int k = 2; k < headerRow.getLastCellNum(); k++) {
-                    MethodParameter param = new MethodParameter();
-                    param.setClassName(className);
-                    param.setMethodName(methodName);
-                    param.setParameterName(headerRow.getCell(k).getStringCellValue());
-                    param.setParameterValue(currentRow.getCell(k).getStringCellValue());
-                    methodParams.add(param);
+
+                    if(currentRow.getCell(k) != null && !currentRow.getCell(k).getStringCellValue().isEmpty()){
+                        if(headerRow.getCell(k).getStringCellValue().equals("Method Parameters")){
+                            ObjectMapper mapper = new ObjectMapper();
+                            String jsonContent = currentRow.getCell(k).getStringCellValue();
+                            Map<String, String> jsonMap = mapper.readValue(jsonContent, new TypeReference<Map<String, String>>() {});
+
+                            for (Map.Entry<String, String> entry : jsonMap.entrySet()) {
+                                String paramName = entry.getKey();
+                                String paramValue = entry.getValue();
+                                MethodParameter param = new MethodParameter();
+                                param.setClassName(className);
+                                param.setMethodName(methodName);
+                                param.setParameterName(paramName);
+                                param.setParameterValue(paramValue);
+                                methodParams.add(param);
+                            }
+                        } else {
+                            MethodParameter param = new MethodParameter();
+                            param.setClassName(className);
+                            param.setMethodName(methodName);
+                            param.setParameterName(headerRow.getCell(k).getStringCellValue());
+                            param.setParameterValue(currentRow.getCell(k).getStringCellValue());
+                            methodParams.add(param);
+                        }
+                    }
                 }
                 methodParamsRows.add(methodParams);
             }
@@ -155,5 +179,7 @@ public class TestGenerator {
         return requiredMap;
 
     }
+
+
 
 }

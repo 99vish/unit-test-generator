@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -41,11 +42,15 @@ public class MethodDeclaration {
 
     private String pathToRequestJson;
 
-    private Map<String,List<String>> resultHeadersAndValidationChecks;
+    private Map<String,List<String>> responseResultHeadersAndValidationChecks;
 
-    private Map<String,List<String>> headersAndValidationChecks;
+    private Map<String,List<String>> responseHeadersAndValidationChecks;
 
     private Integer methodNumber;
+
+    private String pathToJwtJson = null;
+
+    private Map<String,Object> responseHeaders = new HashMap<>();
 
 
 }

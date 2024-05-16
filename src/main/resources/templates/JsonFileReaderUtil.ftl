@@ -9,6 +9,9 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.type.CollectionType;
 
+import com.blumeglobal.core.security.token.config.JwtBean;
+
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -59,6 +62,16 @@ public class JsonFileReaderUtil {
         apiResponse.setResults(resultList);
 
         return apiResponse;
+    }
+
+    public static JwtBean getJwtFromJsonFile (String pathToJsonFile) {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            return objectMapper.readValue(new File(pathToJsonFile), JwtBean.class);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 }
 

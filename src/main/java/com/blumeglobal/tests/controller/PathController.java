@@ -10,6 +10,7 @@ import com.blumeglobal.tests.model.request.ExcelPathRequest;
 import com.blumeglobal.tests.model.request.InputTestCasesRequest;
 import com.blumeglobal.tests.model.request.PathRequest;
 import com.blumeglobal.tests.util.JavaParserUtil;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import lombok.Getter;
 import org.springframework.http.ResponseEntity;
@@ -60,7 +61,7 @@ public class PathController {
     }
 
     @PostMapping("/generateTemplatesFromSelection")
-    public ResponseEntity<List<ExcelTemplate>> generateTemplates(@RequestBody InputTestCasesRequest inputTestCasesRequest) {
+    public ResponseEntity<List<ExcelTemplate>> generateTemplates(@RequestBody InputTestCasesRequest inputTestCasesRequest) throws JsonProcessingException {
 
         inputTestCasesList.clear();
         inputMethodNamesByClassName.clear();
@@ -83,7 +84,7 @@ public class PathController {
     }
 
     @PostMapping("/updatePaths")
-    public ResponseEntity<List<ExcelTemplate>> updatePaths(@RequestBody PathRequest pathRequest) {
+    public ResponseEntity<List<ExcelTemplate>> updatePaths(@RequestBody PathRequest pathRequest) throws JsonProcessingException {
 
         inputTestCasesList.clear();
         inputMethodNamesByClassName.clear();

@@ -4,6 +4,8 @@ import com.blumeglobal.tests.cache.Cache;
 import com.blumeglobal.tests.cache.InputTestCasesCache;
 import com.blumeglobal.tests.model.excel.ExcelTemplate;
 import com.blumeglobal.tests.model.excel.InputTestCases;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
@@ -18,19 +20,14 @@ import java.util.*;
 public class ExcelTemplateGenerator {
 
 
-
-//    @Getter
-//    public static List<List<String>> methodParams = new ArrayList<>();
-
-
-    public static ExcelTemplate generateExcelTemplate( String ClassName ,List<InputTestCases> InputTestCasesList){
+    public static ExcelTemplate generateExcelTemplate( String ClassName ,List<InputTestCases> InputTestCasesList) throws JsonProcessingException {
 
         List<String>Headers=Arrays.asList("Class Name","Method Name","Parameter Name","Parameter Value");
         List<String>Requests=new ArrayList<>();
 
         List<String>Responses = new ArrayList<>();
 
-        Map<String,List<String>> methodParams = new HashMap<>();
+        Map<String,String> methodParams = new HashMap<>();
 
         for(InputTestCases inputTestCase:InputTestCasesList){
 
@@ -99,7 +96,8 @@ public class ExcelTemplateGenerator {
 
 
                 }
-                methodParams.put(inputTestCase.getMethodName(),Parameters);
+                String jsonParametersString = convertParametersToJson(Parameters);
+                methodParams.put(inputTestCase.getMethodName(),jsonParametersString);
             }
 
             if (hasApiResponse) {
@@ -131,5 +129,16 @@ public class ExcelTemplateGenerator {
         return excelTemplate;
 
 
+    }
+
+    private static String convertParametersToJson(List<String> parameters) throws JsonProcessingException {
+        Map<String, String> parameterMap = new HashMap<>();
+        for (String parameter : parameters) {
+            parameterMap.put(parameter, "");
+        }
+
+        // Convert the map to a JSON string
+        ObjectMapper objectMapper = new ObjectMapper();
+        return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(parameterMap);
     }
 }
