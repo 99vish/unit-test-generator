@@ -11,6 +11,6 @@ import java.util.Set;
 
 public interface MethodDeclarationBuilder {
 
-    List<MethodDeclaration> buildMethodDeclarations(String className, List<InputTestCases> inputTestCasesList) throws IOException;
+    List<MethodDeclaration> buildMethodDeclarations(String className, Set<String> inputTestCasesList) throws IOException;
 
 }

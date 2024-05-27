@@ -32,7 +32,9 @@ import java.util.*;
 public class TestGenerator {
 
 
-    public static void generateTests(String className, List<InputTestCases> inputTestCasesList) throws IOException {
+    public static void generateTests(String className, Set<String>inputTestMethods) throws IOException {
+
+        System.out.println("process running for "+className);
 
         Path excelPath = PathController.getCompletedExcelPath();
 
@@ -48,7 +50,7 @@ public class TestGenerator {
         Map<String,List<List<MethodParameter>>> methodNameToParametersMap = getMethodNameToParametersMap(workbook,className);
 
         MethodDeclarationBuilder methodDeclarationBuilder=new MethodDeclarationBuilderImpl(methodNameToParametersMap);
-        ClassDeclarationBuilder classDeclarationBuilder=new ClassDeclarationBuilderImpl(methodDeclarationBuilder,inputTestCasesList,className);
+        ClassDeclarationBuilder classDeclarationBuilder=new ClassDeclarationBuilderImpl(methodDeclarationBuilder,inputTestMethods,className);
         TestClassDeclaration classDeclaration = classDeclarationBuilder.buildClassDeclarations();
 
 
@@ -140,8 +142,9 @@ public class TestGenerator {
             int[] filteredRowNum = ExcelUtil.getFilteredRows(sheet, className, methodName);
             int startingIndex = filteredRowNum[0];
             int endingIndex = filteredRowNum[1];
-            for (int i = startingIndex + 1; i <= endingIndex; i++) {
-                Row headerRow = sheet.getRow(startingIndex);
+            Row headerRow = sheet.getRow(0);
+            for (int i = startingIndex; i <= endingIndex; i++) {
+
                 Row currentRow = sheet.getRow(i);
                 List<MethodParameter> methodParams = new ArrayList<>();
                 for (int k = 2; k < headerRow.getLastCellNum(); k++) {

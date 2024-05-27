@@ -16,13 +16,13 @@ public class ClassDeclarationBuilderImpl implements ClassDeclarationBuilder {
 
     private final MethodDeclarationBuilder methodDeclarationBuilder;
 
-    private List<InputTestCases> inputTestCases;
+    private Set<String> inputTestCases;
 
     private final String className;
 
 
 
-    public ClassDeclarationBuilderImpl(MethodDeclarationBuilder methodDeclarationBuilder, List<InputTestCases> inputTestCases,String className){
+    public ClassDeclarationBuilderImpl(MethodDeclarationBuilder methodDeclarationBuilder, Set<String> inputTestCases,String className){
         this.methodDeclarationBuilder=methodDeclarationBuilder;
         this.inputTestCases=inputTestCases;
         this.className=className;

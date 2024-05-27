@@ -13,12 +13,15 @@ import com.blumeglobal.tests.util.JavaParserUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import lombok.Getter;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.*;
@@ -42,6 +45,8 @@ public class PathController {
     public  static Map<String, List<InputTestCases>> inputTestCasesByClassNameMap = new HashMap<>();
     @Getter
     public  List<String> inputClassNames = new ArrayList<>();
+    @Getter
+    public static Map<String, Set<String>> inputTestCasesByClassNameMapSet = new HashMap<>();
 
 
     @PostMapping("/getControllersAndMethods")
@@ -84,7 +89,7 @@ public class PathController {
     }
 
     @PostMapping("/updatePaths")
-    public ResponseEntity<List<ExcelTemplate>> updatePaths(@RequestBody PathRequest pathRequest) throws JsonProcessingException {
+    public ResponseEntity<String> updatePaths(@RequestBody PathRequest pathRequest) throws JsonProcessingException {
 
         inputTestCasesList.clear();
         inputMethodNamesByClassName.clear();
@@ -92,21 +97,36 @@ public class PathController {
         inputClassNames.clear();
 
         projectPath = pathRequest.getProjectPath();
-        excelPath = pathRequest.getExcelPath();
+        completedExcelPath = pathRequest.getExcelPath();
 
         Cache.cacheClassOrInterfaceDeclarations(projectPath.toString());
+//
+//        InputTestCasesCache inputTestCasesCache =  new InputTestCasesCache();
+//        inputTestCasesCache.cacheInputTestCases(excelPath,inputTestCasesList,inputTestCasesByClassNameMap,inputMethodNamesByClassName,inputClassNames);
 
-        InputTestCasesCache inputTestCasesCache =  new InputTestCasesCache();
-        inputTestCasesCache.cacheInputTestCases(excelPath,inputTestCasesList,inputTestCasesByClassNameMap,inputMethodNamesByClassName,inputClassNames);
+        inputTestCasesList=getInputTestCasesFromExcel(completedExcelPath);
 
-        List <ExcelTemplate> templates = new ArrayList<>();
+        InputTestCasesCache inputTestCasesCache = new InputTestCasesCache();
+        inputTestCasesCache.populateInputTestCasesByClassNameMap(inputTestCasesList,inputTestCasesByClassNameMap,inputClassNames);
 
-        for(String className:inputClassNames){
-            templates.add(ExcelTemplateGenerator.generateExcelTemplate(className,inputTestCasesByClassNameMap.get(className)));
-        }
+//        List <ExcelTemplate> templates = new ArrayList<>();
+//
+//        for(String className:inputClassNames){
+//            templates.add(ExcelTemplateGenerator.generateExcelTemplate(className,inputTestCasesByClassNameMap.get(className)));
+//        }
+
+        populateInputTestCasesByClassNameMapSet(completedExcelPath,inputTestCasesByClassNameMapSet);
+        inputTestCasesByClassNameMapSet.forEach((className, inputTestCasesSet) -> {
+            try {
+                TestGenerator.generateTests(className, inputTestCasesSet);
+            } catch (IOException e) {
+                // Handle the exception
+                e.printStackTrace();
+            }
+        });
 
 
-        return ResponseEntity.ok().body(templates);
+        return ResponseEntity.ok().body("Tests Generated Successfully");
     }
 
 
@@ -114,9 +134,10 @@ public class PathController {
     public ResponseEntity<String> generateTests(@RequestBody ExcelPathRequest excelPathRequest) {
 
         completedExcelPath = excelPathRequest.getCompletedExcelPath();
-        inputTestCasesByClassNameMap.forEach((className, inputTestCasesList) -> {
+        populateInputTestCasesByClassNameMapSet(completedExcelPath,inputTestCasesByClassNameMapSet);
+        inputTestCasesByClassNameMapSet.forEach((className, inputTestCasesSet) -> {
             try {
-                TestGenerator.generateTests(className, inputTestCasesList);
+                TestGenerator.generateTests(className, inputTestCasesSet);
             } catch (IOException e) {
                 // Handle the exception
                 e.printStackTrace();
@@ -126,5 +147,57 @@ public class PathController {
         return ResponseEntity.ok("Tests Generated Successfully");
     }
 
+    private void populateInputTestCasesByClassNameMapSet(Path excelPath ,Map<String,Set<String>> inputTestCasesByClassNameMapSet){
+        try (FileInputStream fis = new FileInputStream(excelPath.toFile());
+             Workbook workbook = new XSSFWorkbook(fis)) {
+
+            Sheet sheet = workbook.getSheet("MethodDetails");
+            if (sheet == null) {
+                throw new IllegalArgumentException("Sheet 'MethodDetails' does not exist in the provided Excel file.");
+            }
+
+            for (int rowIndex = 1; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
+                Row row = sheet.getRow(rowIndex);
+                if (row != null) {
+                    String className = row.getCell(0).getStringCellValue();
+                    String methodName = row.getCell(1).getStringCellValue();
+
+                    inputTestCasesByClassNameMapSet
+                            .computeIfAbsent(className, k -> new HashSet<>())
+                            .add(methodName);
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private List<InputTestCases> getInputTestCasesFromExcel(Path excelPath){
+        List<InputTestCases> testCasesList = new ArrayList<>();
+        try (FileInputStream fis = new FileInputStream(excelPath.toFile()) ;
+            Workbook workbook = new XSSFWorkbook(fis)) {
+            Sheet sheet = workbook.getSheet("MethodDetails"); // Accessing the sheet by name
+            if (sheet == null) {
+                throw new IllegalArgumentException("Sheet 'methodDetails' not found in the workbook");
+            }
+
+            for (int rowIndex = 1; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
+                Row row = sheet.getRow(rowIndex);
+                if (row != null) {
+                    String className = row.getCell(0).getStringCellValue();
+                    String methodName = row.getCell(1).getStringCellValue();
+                    InputTestCases inputTestCase = new InputTestCases();
+                    inputTestCase.setClassName(className);
+                    inputTestCase.setMethodName(methodName);
+                    testCasesList.add(inputTestCase);
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return testCasesList;
+    }
 
 }
+
+

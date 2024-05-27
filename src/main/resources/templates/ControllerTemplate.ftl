@@ -44,11 +44,6 @@ public class ${className}Test extends AbstractIntegrationTest {
     </#if>
     </#if>
 
-    @Before
-    public void setUpMongoDb() {
-
-    }
-
 
 <#list methodsList as method>
  <#if method.hasRequestBody>
@@ -103,9 +98,7 @@ public class ${className}Test extends AbstractIntegrationTest {
         }
     </#if>
     </#if>
-    <#assign Properties = method.assertionParameters>
 
-    <#if method.hasRequestBody>
         String pathToResponseJson = "${method.pathToResponseJson}";
         ApiResponse<${method.responseEntityType}> expectedResponse = JsonFileReaderUtil.readResponseEntities(pathToResponseJson,${method.responseEntityType}.class);
         List<${method.responseEntityType}> expectedList = expectedResponse.getResults();
@@ -116,7 +109,7 @@ public class ${className}Test extends AbstractIntegrationTest {
     <#list method.responseHeadersAndValidationChecks?keys as headerKey>
         <#if method.responseHeadersAndValidationChecks[headerKey]?size != 0>
         <#list method.responseHeadersAndValidationChecks[headerKey] as validation>
-        assertTrue(ValidationUtil.validate(body.get${headerKey?cap_first}(), <#if validation == "RANGE"> 0, 0 <#else>"${validation}" </#if>));
+        assertTrue(ValidationUtil.validate(body.get${headerKey?cap_first}(), "${validation}"));
         </#list>
         </#if>
         assertEquals(expectedResponse.get${headerKey?cap_first}(), body.get${headerKey?cap_first}());
@@ -124,21 +117,17 @@ public class ${className}Test extends AbstractIntegrationTest {
     </#if>
 
         for (int i = 0; i < expectedList.size(); i++) {
-    <#list Properties as property>
-           assertEquals(expectedList.get(i).get${property?cap_first}(),actualList.get(i).get${property?cap_first}());
-    </#list>
     <#if method.responseResultHeadersAndValidationChecks?size != 0>
     <#list method.responseResultHeadersAndValidationChecks?keys as resultHeaderKey>
        <#if method.responseResultHeadersAndValidationChecks[resultHeaderKey]?size != 0>
        <#list method.responseResultHeadersAndValidationChecks[resultHeaderKey] as validation>
-           assertTrue(ValidationUtil.validate(body.getResults().get(i).get${resultHeaderKey?cap_first}(), <#if validation == "RANGE"> 0, 0 <#else>"${validation}" </#if>));
+           assertTrue(ValidationUtil.validate(body.getResults().get(i).get${resultHeaderKey?cap_first}(), "${validation}" ));
        </#list>
        </#if>
            assertEquals(expectedResponse.getResults().get(i).get${resultHeaderKey?cap_first}(), body.getResults().get(i).get${resultHeaderKey?cap_first}());
     </#list>
     </#if>
         }
-    </#if>
 
     <#if pathToJwtJson??>
        JwtContextHolder.removeJwtContext();
@@ -219,22 +208,17 @@ public class ${className}Test extends AbstractIntegrationTest {
     </#if>
     </#if>
 
-        <#assign Properties = method.assertionParameters>
-
         ApiResponse<${method.responseEntityType}> expectedResponse = JsonFileReaderUtil.readResponseEntities(pathToResponseJson,${method.responseEntityType}.class);
         List<${method.responseEntityType}> expectedList = expectedResponse.getResults();
         assertNotNull(expectedList);
         assertEquals(expectedList.size(), actualList.size());
 
         for (int i = 0; i < expectedList.size(); i++) {
-    <#list Properties as property>
-           assertEquals(expectedList.get(i).get${property?cap_first}(),actualList.get(i).get${property?cap_first}());
-    </#list>
     <#if method.responseResultHeadersAndValidationChecks?size != 0>
     <#list method.responseResultHeadersAndValidationChecks?keys as resultHeaderKey>
        <#if method.responseResultHeadersAndValidationChecks[resultHeaderKey]?size != 0>
        <#list method.responseResultHeadersAndValidationChecks[resultHeaderKey] as validation>
-           assertTrue(ValidationUtil.validate(body.getResults().get(i).get${resultHeaderKey?cap_first}(), <#if validation == "RANGE"> 0, 0 <#else>"${validation}" </#if>));
+           assertTrue(ValidationUtil.validate(body.getResults().get(i).get${resultHeaderKey?cap_first}(), "${validation}" ));
        </#list>
        </#if>
            assertEquals(expectedResponse.getResults().get(i).get${resultHeaderKey?cap_first}(), body.getResults().get(i).get${resultHeaderKey?cap_first}());
@@ -319,21 +303,17 @@ public class ${className}Test extends AbstractIntegrationTest {
     </#if>
     </#if>
 
-    <#assign Properties = method.assertionParameters>
         ApiResponse<${method.responseEntityType}> expectedResponse = JsonFileReaderUtil.readResponseEntities(pathToResponseJson,${method.responseEntityType}.class);
         List<${method.responseEntityType}> expectedList = expectedResponse.getResults();
         assertNotNull(expectedList);
         assertEquals(expectedList.size(), actualList.size());
 
         for (int i = 0; i < expectedList.size(); i++) {
-      <#list Properties as property>
-             assertEquals(expectedList.get(i).get${property?cap_first}(),actualList.get(i).get${property?cap_first}());
-      </#list>
       <#if method.responseResultHeadersAndValidationChecks?size != 0>
       <#list method.responseResultHeadersAndValidationChecks?keys as resultHeaderKey>
          <#if method.responseResultHeadersAndValidationChecks[resultHeaderKey]?size != 0>
          <#list method.responseResultHeadersAndValidationChecks[resultHeaderKey] as validation>
-             assertTrue(ValidationUtil.validate(body.getResults().get(i).get${resultHeaderKey?cap_first}(), <#if validation == "RANGE"> 0, 0 <#else>"${validation}" </#if>));
+             assertTrue(ValidationUtil.validate(body.getResults().get(i).get${resultHeaderKey?cap_first}(),"${validation}" ));
          </#list>
          </#if>
              assertEquals(expectedResponse.getResults().get(i).get${resultHeaderKey?cap_first}(), body.getResults().get(i).get${resultHeaderKey?cap_first}());

@@ -1,8 +1,6 @@
 package com.blumeglobal.tests.builder;
 
 import com.blumeglobal.tests.cache.Cache;
-import com.blumeglobal.tests.cache.InputTestCasesCache;
-import com.blumeglobal.tests.model.excel.InputTestCases;
 import com.blumeglobal.tests.model.output.Argument;
 import com.blumeglobal.tests.model.output.MethodDeclaration;
 import com.blumeglobal.tests.model.excel.MethodParameter;
@@ -12,6 +10,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
@@ -37,15 +36,17 @@ public class MethodDeclarationBuilderImpl implements MethodDeclarationBuilder {
     }
 
     @Override
-    public List<MethodDeclaration> buildMethodDeclarations(String className, List<InputTestCases> inputTestCasesList) throws IOException {
+    public List<MethodDeclaration> buildMethodDeclarations(String className,Set<String>inputTestCasesSet) throws IOException {
 
         Path classPath = Cache.getPathFromClassDeclaration(Cache.getClassOrInterfaceDeclarationByClassName(className));
         List<MethodDeclaration> methodDeclarations=new ArrayList<>();
         //List<String> methodNamesByClassNameFromExcel = getGivenMethodNamesByClassName(className);
+        List<String> inputTestCasesSetAsList = new ArrayList<>(inputTestCasesSet);
 
-        for (int i=0;i<inputTestCasesList.size();i++) {
 
-            String methodName = inputTestCasesList.get(i).getMethodName();
+        for (int i=0;i<inputTestCasesSetAsList.size();i++) {
+
+            String methodName = inputTestCasesSetAsList.get(i);
             com.github.javaparser.ast.body.MethodDeclaration javaParserMethodDeclaration = Cache.getMethodDeclaration(className, methodName);
 
             List<List<MethodParameter>> methodParameterRows = methodNameToParametersMap.get(methodName);
@@ -55,14 +56,14 @@ public class MethodDeclarationBuilderImpl implements MethodDeclarationBuilder {
                 MethodDeclaration methodDeclaration = new MethodDeclaration();
                 methodDeclaration.setMethodName(methodName);
                 methodDeclaration.setMethodNumber(j);
-                String assertionParameters = InputTestCasesCache.getAssertionParametersStringByClassNameAndMethodName(className, methodName, inputTestCasesList);
-                List<String> assertionParametersList = new ArrayList<>();
+//                String assertionParameters = InputTestCasesCache.getAssertionParametersStringByClassNameAndMethodName(className, methodName, inputTestCasesList);
+//                List<String> assertionParametersList = new ArrayList<>();
+//
+//                if (assertionParameters != null) {
+//                    assertionParametersList = getAssertionParametersAsList(assertionParameters);
+//                }
 
-                if (assertionParameters != null) {
-                    assertionParametersList = getAssertionParametersAsList(assertionParameters);
-                }
-
-                methodDeclaration.setAssertionParameters(assertionParametersList);
+                //methodDeclaration.setAssertionParameters(assertionParametersList);
                 assert javaParserMethodDeclaration != null;
                 if (javaParserMethodDeclaration.getType().isClassOrInterfaceType()) {
                     if (javaParserMethodDeclaration.getType().asClassOrInterfaceType().getTypeArguments().isPresent()) {
@@ -172,9 +173,10 @@ public class MethodDeclarationBuilderImpl implements MethodDeclarationBuilder {
                     } else if (methodParam.getParameterName().equals("Response")){
 
                         Path pathToJsonDirectory = PathGeneratorUtil.getPathForJsonGeneration(classPath, className, methodName);
-                        methodDeclaration.setPathToResponseJson(writeJson(pathToJsonDirectory.toString(), methodParam.getParameterValue(), j, "response"));
                         methodDeclaration.setResponseResultHeadersAndValidationChecks(getResponseResultHeadersAndValidationChecksFromJson(methodParam.getParameterValue()));
                         methodDeclaration.setResponseHeadersAndValidationChecks(getResponseHeadersAndValidationChecksFromJson(methodParam.getParameterValue()));
+                        String modifiedJsonContent = modifyJson(methodParam.getParameterValue());
+                        methodDeclaration.setPathToResponseJson(writeJson(pathToJsonDirectory.toString(), modifiedJsonContent, j, "response"));
 
                     } else if (methodParam.getParameterName().equals("Request Headers")) {
 
@@ -235,6 +237,7 @@ public class MethodDeclarationBuilderImpl implements MethodDeclarationBuilder {
         return methodDeclarations;
     }
 
+
     private List<String> getAssertionParametersAsList(String inputString) {
         String[] partsArray = inputString.split(",");
         List<String> resultList = new ArrayList<>();
@@ -245,6 +248,62 @@ public class MethodDeclarationBuilderImpl implements MethodDeclarationBuilder {
         }
 
         return resultList;
+    }
+
+    private static String modifyJson(String jsonContent) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode rootNode = mapper.readTree(jsonContent);
+
+            if (rootNode.isObject()) {
+                traverseAndModify((ObjectNode) rootNode);
+            }
+
+            return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(rootNode);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to modify JSON", e);
+        }
+    }
+
+    private static void traverseAndModify(ObjectNode node) {
+        // Collect entries to be modified
+        Set<Map.Entry<String, JsonNode>> entriesToModify = new HashSet<>();
+
+        Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
+        while (fields.hasNext()) {
+            Map.Entry<String, JsonNode> field = fields.next();
+            String fieldName = field.getKey();
+            JsonNode fieldValue = field.getValue();
+
+            // Check if the key contains curly braces
+            if (fieldName.contains("{")) {
+                entriesToModify.add(field);
+            }
+
+            // Recursively modify nested objects
+            if (fieldValue.isObject()) {
+                traverseAndModify((ObjectNode) fieldValue);
+            } else if (fieldValue.isArray()) {
+                for (JsonNode arrayElement : fieldValue) {
+                    if (arrayElement.isObject()) {
+                        traverseAndModify((ObjectNode) arrayElement);
+                    }
+                }
+            }
+        }
+
+        // Modify the collected entries after iteration
+        for (Map.Entry<String, JsonNode> entry : entriesToModify) {
+            String originalKey = entry.getKey();
+            JsonNode value = entry.getValue();
+            String modifiedKey = originalKey.replaceAll("\\{.*?\\}", "").trim();
+
+            // Add the modified key-value pair
+            node.set(modifiedKey, value);
+
+            // Remove the original key-value pair
+            node.remove(originalKey);
+        }
     }
 
     private static String writeJson(String outputPath, String content, int j ,String type){
@@ -344,7 +403,7 @@ public class MethodDeclarationBuilderImpl implements MethodDeclarationBuilder {
         ObjectMapper mapper = new ObjectMapper();
         JsonNode rootNode = mapper.readTree(json);
         Map<String, List<String>> result = new HashMap<>();
-        traverseResultJson(rootNode, result , true, "");
+        traverseResultJson(rootNode,result,true, "");
         return result;
     }
 
@@ -357,7 +416,6 @@ public class MethodDeclarationBuilderImpl implements MethodDeclarationBuilder {
                     while (fields.hasNext()) {
                         Map.Entry<String, JsonNode> field = fields.next();
                         String fieldName = prefix.isEmpty() ? field.getKey() : prefix + "." + field.getKey();
-
                         if(isFirstObject) {
                             extractResultPattern(toCamelCase(fieldName), result);
                             traverseResultJson(field.getValue(), result, false, fieldName );
@@ -374,12 +432,15 @@ public class MethodDeclarationBuilderImpl implements MethodDeclarationBuilder {
     private static void extractResultPattern(String key, Map<String, List<String>> result) {
         Pattern pattern = Pattern.compile("([^\\{]*)\\{(.*?)\\}");
         Matcher matcher = pattern.matcher(key);
-        List<String> matches = result.computeIfAbsent(key, k -> new ArrayList<>());
+        boolean foundPattern = false;
+
         while (matcher.find()) {
+            foundPattern = true;
             String originalName = matcher.group(1).trim();
             String valueInsideCurlyBraces = matcher.group(2).trim();
 
             // Split the value inside curly braces by comma and add each part to the list
+            List<String> matches = result.computeIfAbsent(originalName, k -> new ArrayList<>());
             String[] values = valueInsideCurlyBraces.split(",");
             for (String value : values) {
                 matches.add(value.trim());
@@ -390,10 +451,13 @@ public class MethodDeclarationBuilderImpl implements MethodDeclarationBuilder {
             if (!replacedKey.equals(key)) {
                 // Remove the original key and add the replaced key
                 List<String> value = result.remove(key);
-                result.put(replacedKey, value);
-
-
+                result.put(replacedKey, Arrays.asList(values));
             }
+        }
+
+        // If no curly braces were found, add the key as is
+        if (!foundPattern) {
+            result.computeIfAbsent(key, k -> new ArrayList<>());
         }
     }
 
